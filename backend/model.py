@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
-from typing import Optional
+from typing import Optional, List
 
 from pydantic import BaseModel, Field
 
@@ -63,3 +63,58 @@ class Trade(BaseModel):
     execution_size: Decimal = Field(alias="executionSize")
     execution_price: Decimal = Field(alias="executionPrice")
     execution_fee: Decimal = Field(alias="executionFee")
+
+
+# --------------
+# Asset models
+# --------------
+
+
+class AssetClass(str, Enum):
+    EQUITY = "EQUITY"
+    ETF = "ETF"
+    BOND = "BOND"
+    FUND = "FUND"
+    CRYPTO = "CRYPTO"
+    OTHER = "OTHER"
+
+
+class Asset(BaseModel):
+    isin: Optional[str] = Field(alias="ISIN", default=None)
+    symbol: Optional[str] = None
+    name: str
+    currency: str
+    asset_class: AssetClass
+    description: Optional[str] = None
+
+
+# --------------
+# App models
+# --------------
+
+
+class Risk(BaseModel):
+    summary: str = Field(alias="summary")
+    ratio: float = Field(alias="ratio")
+    
+    
+class Portfolio(BaseModel):
+    user_id: str = Field(alias="userId")
+    assets: List[Asset] = Field(alias="assets")
+    trades: List[Trade] = Field(alias="trades")
+    summary: str = Field(alias="summary")
+    risk: Risk = Field(alias="risk")
+
+
+class Person(BaseModel):
+    user_id: str = Field(alias="userId")
+    first_name: str = Field(alias="firstName")
+    last_name: str = Field(alias="lastName")
+    friends: List[str] = Field(alias="friends")
+    avatar_link: str = Field(alias="avatarLink")
+    description: Optional[str] = Field(alias="description", default=None)
+    portfolio: Portfolio = Field(alias="portfolio")
+    
+    
+
+    
