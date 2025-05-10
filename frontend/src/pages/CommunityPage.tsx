@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/c
 import { useState } from "react"
 import { ChevronDown, ChevronUp, Volume2, VolumeX } from "lucide-react"
 import { UserCarousel, UserData } from "@/components/UserCarousel"
+import { UserExplorer, ExploreUserData } from "@/components/UserExplorer"
 import { useNavigate } from "react-router-dom"
 
 export function CommunityPage() {
@@ -55,6 +56,58 @@ export function CommunityPage() {
     }
   ];
 
+  // Sample data for the user explorer component
+  const exploreUsers: ExploreUserData[] = [
+    {
+      id: "101",
+      avatarLink: "https://i.pravatar.cc/300?img=11",
+      firstName: "David",
+      lastName: "Garcia",
+      keyword1: "Crypto",
+      keyword2: "Tech Stocks"
+    },
+    {
+      id: "102",
+      avatarLink: "https://i.pravatar.cc/300?img=12",
+      firstName: "Sarah",
+      lastName: "Miller",
+      keyword1: "ESG",
+      keyword2: "Green Energy"
+    },
+    {
+      id: "103",
+      avatarLink: "https://i.pravatar.cc/300?img=13",
+      firstName: "Robert",
+      lastName: "Kim",
+      keyword1: "Real Estate",
+      keyword2: "Bonds"
+    },
+    {
+      id: "104",
+      avatarLink: "https://i.pravatar.cc/300?img=14",
+      firstName: "Jennifer",
+      lastName: "Thompson",
+      keyword1: "Startups",
+      keyword2: "Angel Investing"
+    },
+    {
+      id: "105",
+      avatarLink: "https://i.pravatar.cc/300?img=15",
+      firstName: "Ahmed",
+      lastName: "Hassan",
+      keyword1: "Commodities",
+      keyword2: "Forex"
+    },
+    {
+      id: "106",
+      avatarLink: "https://i.pravatar.cc/300?img=16",
+      firstName: "Lisa",
+      lastName: "Wong",
+      keyword1: "Dividends",
+      keyword2: "Value Investing"
+    }
+  ];
+
   // Function to handle text-to-speech
   const handleTextToSpeech = () => {
     if (isReading) {
@@ -76,6 +129,11 @@ export function CommunityPage() {
 
   // Handle user selection from carousel
   const handleUserSelect = (user: UserData) => {
+    navigate(`/community/user/${user.id}`);
+  };
+
+  // Handle user selection from explorer
+  const handleExploreUserSelect = (user: ExploreUserData) => {
     navigate(`/community/user/${user.id}`);
   };
 
@@ -139,6 +197,12 @@ export function CommunityPage() {
       <div className="w-full">
         <h2 className="text-2xl font-bold text-center">Community Members</h2>
         <UserCarousel users={sampleUsers} onUserSelect={handleUserSelect} />
+      </div>
+
+      {/* Explore Users Section */}
+      <div className="w-full pb-8">
+        <h2 className="text-2xl font-bold text-center mb-6">Explore More Users</h2>
+        <UserExplorer users={exploreUsers} onUserSelect={handleExploreUserSelect} />
       </div>
     </div>
   )
