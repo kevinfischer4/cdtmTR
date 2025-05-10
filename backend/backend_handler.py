@@ -39,8 +39,7 @@ def get_portfolio_data(cur, user_id: str):
                      summary=portfolio_data[5] or "",
                      totalReturn=portfolio_data[6] or 0.0,
                      riskSummary=portfolio_data[7] or "",
-                     riskRatio=portfolio_data[8] or 0.0,
-                     totalRisk=portfolio_data[9] or 0.0)
+                     riskRatio=portfolio_data[8] or 0.0)
                      
 
 def get_friends_data(cur, user_id: str) -> List[Person]:

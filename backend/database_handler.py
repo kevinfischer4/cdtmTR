@@ -59,8 +59,7 @@ def create_tables(cur):
         summary TEXT,
         totalReturn FLOAT8,
         riskSummary TEXT,
-        riskRatio FLOAT8,
-        totalRisk FLOAT8);""")
+        riskRatio FLOAT8);""")
     cur.execute("""CREATE TABLE Tradings (
         userId UUID NOT NULL,
         executedAt TIMESTAMP NOT NULL,
@@ -123,7 +122,9 @@ def insert_user(cur, user_id: str):
 
 def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: List[float], tradings: str, transactions: str):
     summary = generate_portfolio_summary(tradings, transactions)
+    time.sleep(2)
     risk_summary = generate_risk_summary(tradings, transactions)
+    time.sleep(2)
     cur.execute("""
         INSERT INTO Portfolio (
             userId,
@@ -134,10 +135,9 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
             summary,
             totalReturn,
             riskSummary,
-            riskRatio,
-            totalRisk
+            riskRatio
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s
         );
     """, (
         user_id, # userId (UUID)
@@ -148,7 +148,6 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
         summary,
         0.0,
         risk_summary,
-        0.0,
         0.0
     ))
     # TODO: Calculation
@@ -163,8 +162,6 @@ def add_friend(cur, user_id: str, friend_id: str):
         END
         WHERE userId = %s;
     """, (friend_id, friend_id, user_id))
-
-
     
 
 def set_summary(cur, user_id: str, friend_names: List[str], friend_portfolio_summaries: List[str]):
@@ -203,14 +200,14 @@ def set_latest(cur, user_id: str, tradings: str):
     """, (summary, user_id))
 
 
-def set_risk_data(cur, user_id: str, risk_ratio: float, risk_text: str, total_risk: float):
+def set_risk_data(cur, user_id: str, risk_ratio: float, risk_text: str, total_return: float):
     cur.execute("""
         UPDATE Portfolio
         SET riskRatio = %s, 
             riskSummary = %s,
-            totalRisk = %s
+            totalReturn = %s
         WHERE userId = %s;
-    """, (risk_ratio, risk_text, total_risk, user_id))
+    """, (risk_ratio, risk_text, total_return, user_id))
     
     
 def set_avatar_link(cur, user_id: str, avatar_link: str):
@@ -232,6 +229,17 @@ def get_person(cur, user_id: str):
     person = cur.fetchone()
     return person
 
+def get_friends(cur, user_id: str):
+    """
+    Retrieves all friends for a person with the given user_id.
+    """
+    cur.execute("""
+        SELECT friends FROM Person
+        WHERE userId = %s;
+    """, (user_id,))
+    person = cur.fetchone()
+    return person
+
 
 def get_portfolio(cur, user_id: str):
     """
@@ -245,45 +253,6 @@ def get_portfolio(cur, user_id: str):
     return portfolio
 
 
-def insert_n_users_from_trading_data(cur, conn, n: int):
-    """
-    Extracts distinct userIds from the trading_sample_data.csv file
-    and calls insert_user for the first n userIds.
-    
-    Args:
-        cur: Database cursor
-        conn: Database connection
-        n: Number of users to insert
-    
-    Returns:
-        List of inserted userIds
-    """
-    # Path to the CSV file
-    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'data', 'trading_sample_data.csv')
-    
-    # Extract distinct userIds from the CSV file
-    distinct_user_ids = set()
-    with open(csv_path, 'r') as csv_file:
-        csv_reader = csv.DictReader(csv_file)
-        for row in csv_reader:
-            distinct_user_ids.add(row['userId'])
-    
-    # Convert to list for easier indexing
-    user_ids_list = list(distinct_user_ids)
-    
-    # Insert the first n users
-    inserted_user_ids = []
-    for i in range(min(n, len(user_ids_list))):
-        user_id = user_ids_list[i]
-        insert_user(cur, user_id)
-        inserted_user_ids.append(user_id)
-            
-    # Commit the changes
-    conn.commit()
-    
-    return inserted_user_ids
-
-
 def main():
     cur, conn = connect_to_database()
     if cur and conn:
@@ -292,7 +261,7 @@ def main():
             create_tables(cur)
             
             # Example: Insert the first 5 users from the trading data
-            inserted_users = insert_n_users_from_trading_data(cur, conn, 100)
+            inserted_users = insert_n_users_from_trading_data(cur, conn, 10)
             print(f"Inserted {len(inserted_users)} users: {inserted_users}")
             
             conn.commit()
