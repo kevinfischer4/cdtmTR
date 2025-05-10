@@ -155,15 +155,14 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
 
 
 def add_friend(cur, user_id: str, friend_id: str):
-    """
-    Appends friend_id to the 'friends' text[] column for a user in the Person table.
-    Initializes the array if it's currently NULL.
-    """
     cur.execute("""
         UPDATE Person
-        SET friends = COALESCE(friends, ARRAY[]::TEXT[]) || %s::TEXT
+        SET friends = CASE
+            WHEN %s = ANY(COALESCE(friends, ARRAY[]::TEXT[])) THEN friends
+            ELSE array_append(COALESCE(friends, ARRAY[]::TEXT[]), %s)
+        END
         WHERE userId = %s;
-    """, (friend_id, user_id))
+    """, (friend_id, friend_id, user_id))
 
 
     
