@@ -2,6 +2,7 @@ import os
 import csv
 from typing import List, Dict, Tuple
 import json
+import time
 from database_handler import connect_to_database, close_connection, insert_portfolio
 
 def create_portfolios_from_trading_data(cur, conn, n: int):
@@ -20,27 +21,41 @@ def create_portfolios_from_trading_data(cur, conn, n: int):
         List of user IDs for which portfolios were created
     """
     # Path to the CSV file
-    csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'data', 'trading_sample_data.csv')
+    trading_csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'data', 'trading_sample_data.csv')
+    transaction_csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'data', 'banking_sample_data.csv')
     
     # Read all trading data
     trading_data = []
-    user_ids = set()
-    
-    with open(csv_path, 'r') as csv_file:
+    user_ids_list = []
+    i = n
+    with open(trading_csv_path, 'r') as csv_file:
         csv_reader = csv.DictReader(csv_file)
         for row in csv_reader:
             trading_data.append(row)
-            user_ids.add(row['userId'])
+            if row['userId'] not in user_ids_list:
+                if i > 0:
+                    user_ids_list.append(row['userId'])
+                    i-=1
     
-    # Convert to list and get the first n users
-    user_ids_list = list(user_ids)
-    selected_users = user_ids_list[:min(n, len(user_ids_list))]
+    transaction_data = []
+    transaction_user_ids_list = []
+    i = n
+    with open(transaction_csv_path, 'r') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            transaction_data.append(row)
+            if row['userId'] not in transaction_user_ids_list:
+                if i > 0:
+                    transaction_user_ids_list.append(row['userId'])
+                    i-=1
+
     
     processed_users = []
     
-    for user_id in selected_users:
+    for user_id in user_ids_list:
         # Filter trading data for this user
         user_trading_data = [row for row in trading_data if row['userId'] == user_id]
+        user_transaction_data = [row for row in transaction_data if row['userId'] == user_id]
         
         # Process the user's trading data to compute asset holdings
         asset_holdings = {}  # ISIN -> current amount
@@ -69,13 +84,14 @@ def create_portfolios_from_trading_data(cur, conn, n: int):
         tradings_json = json.dumps(user_trading_data)
         
         # The transactions parameter is empty for now
-        transactions_json = json.dumps([])
+        transactions_json = json.dumps(user_transaction_data)
         
         # Insert the portfolio
         if asset_names:  # Only create portfolio if user has assets
             insert_portfolio(cur, user_id, asset_names, asset_amounts, tradings_json, transactions_json)
             processed_users.append(user_id)
             print(f"Created portfolio for user {user_id} with {len(asset_names)} assets")
+            time.sleep(2)
     
     # Commit the changes
     conn.commit()
