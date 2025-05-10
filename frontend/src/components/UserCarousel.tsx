@@ -3,6 +3,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+interface Friend {
+  firstName: string;
+  lastName: string;
+  traderProfile: string;
+  latest: string;
+  avatarLink: string;
+}
+
 export interface UserData {
   id: string;
   profilePicUrl: string;
@@ -12,18 +20,55 @@ export interface UserData {
 }
 
 interface UserCarouselProps {
-  users: UserData[];
   className?: string;
   onUserSelect?: (user: UserData) => void;
+  userId?: string;
 }
 
-export function UserCarousel({ users, className = "", onUserSelect }: UserCarouselProps) {
+export function UserCarousel({ className = "", onUserSelect, userId = "00909ba7-ad01-42f1-9074-2773c7d3cf2c" }: UserCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  // Fetch friends data from API
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`https://cdtmtr-backend-e2b85473091c.herokuapp.com/friends/?user_id=${userId}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch friends data');
+        }
+        
+        const friendsData: Friend[] = await response.json();
+        
+        // Map API data to UserData format
+        const mappedUsers = friendsData.map((friend, index) => ({
+          id: index.toString(), // Using index as id since API doesn't provide one
+          profilePicUrl: friend.avatarLink || "https://via.placeholder.com/150",
+          name: `${friend.firstName} ${friend.lastName}`,
+          text1: friend.traderProfile || "No profile information available",
+          text2: friend.latest || "No recent activity",
+        }));
+        
+        setUsers(mappedUsers);
+      } catch (err) {
+        console.error("Error fetching friends:", err);
+        setError("Failed to load friends data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFriends();
+  }, [userId]);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
@@ -45,13 +90,13 @@ export function UserCarousel({ users, className = "", onUserSelect }: UserCarous
   }, []);
 
   const handlePrev = () => {
-    if (transitioning) return;
+    if (transitioning || users.length <= 1) return;
     setTransitioning(true);
     setActiveIndex((prevIndex) => (prevIndex === 0 ? users.length - 1 : prevIndex - 1));
   };
 
   const handleNext = () => {
-    if (transitioning) return;
+    if (transitioning || users.length <= 1) return;
     setTransitioning(true);
     setActiveIndex((prevIndex) => (prevIndex === users.length - 1 ? 0 : prevIndex + 1));
   };
@@ -141,30 +186,46 @@ export function UserCarousel({ users, className = "", onUserSelect }: UserCarous
     return { transform, scale, opacity, zIndex, display };
   };
 
+  if (loading) {
+    return <div className="flex justify-center items-center h-[380px]">Loading friends...</div>;
+  }
+
+  if (error) {
+    return <div className="flex justify-center items-center h-[380px] text-red-500">{error}</div>;
+  }
+
+  if (users.length === 0) {
+    return <div className="flex justify-center items-center h-[380px]">No friends found</div>;
+  }
+
   return (
     <div className={`relative w-full max-w-4xl mx-auto overflow-hidden px-6 ${className}`}>
       {/* Carousel Controls */}
-      <div className="absolute inset-y-0 left-0 flex items-center pl-1">
-        <button 
-          onClick={handlePrev}
-          className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full bg-background shadow-md z-20"
-          disabled={transitioning}
-          aria-label="Previous slide"
-        >
-          <ChevronLeft size={isMobile ? 16 : 20} />
-        </button>
-      </div>
-      
-      <div className="absolute inset-y-0 right-0 flex items-center pr-1">
-        <button 
-          onClick={handleNext}
-          className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full bg-background shadow-md z-20"
-          disabled={transitioning}
-          aria-label="Next slide"
-        >
-          <ChevronRight size={isMobile ? 16 : 20} />
-        </button>
-      </div>
+      {users.length > 1 && (
+        <>
+          <div className="absolute inset-y-0 left-0 flex items-center pl-1">
+            <button 
+              onClick={handlePrev}
+              className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full bg-background shadow-md z-20"
+              disabled={transitioning}
+              aria-label="Previous slide"
+            >
+              <ChevronLeft size={isMobile ? 16 : 20} />
+            </button>
+          </div>
+          
+          <div className="absolute inset-y-0 right-0 flex items-center pr-1">
+            <button 
+              onClick={handleNext}
+              className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full bg-background shadow-md z-20"
+              disabled={transitioning}
+              aria-label="Next slide"
+            >
+              <ChevronRight size={isMobile ? 16 : 20} />
+            </button>
+          </div>
+        </>
+      )}
       
       {/* Carousel Content */}
       <div
@@ -189,8 +250,8 @@ export function UserCarousel({ users, className = "", onUserSelect }: UserCarous
                   <img src={user.profilePicUrl} alt={user.name} />
                 </Avatar>
                 <h3 className="text-base md:text-2xl font-semibold mb-2 md:mb-3 text-center">{user.name}</h3>
-                <p className="text-sm md:text-lg text-muted-foreground text-center mb-2 md:mb-3">{user.text1}</p>
-                <p className="text-sm md:text-base text-muted-foreground text-center">{user.text2}</p>
+                <p className="text-xs md:text-sm text-muted-foreground text-center mb-2 md:mb-3 line-clamp-3">{user.text1}</p>
+                <p className="text-xs md:text-sm text-muted-foreground text-center line-clamp-3">{user.text2}</p>
               </CardContent>
             </Card>
           );
@@ -198,18 +259,20 @@ export function UserCarousel({ users, className = "", onUserSelect }: UserCarous
       </div>
       
       {/* Indicators */}
-      <div className="flex justify-center md:mt-10 gap-1 md:gap-2">
-        {users.map((_, index) => (
-          <button
-            key={index}
-            className={`h-1.5 w-1.5 md:h-2 md:w-2 rounded-full ${
-              index === activeIndex ? "bg-primary" : "bg-muted"
-            }`}
-            onClick={() => setActiveIndex(index)}
-            aria-label={`Go to slide ${index + 1}`}
-          />
-        ))}
-      </div>
+      {users.length > 1 && (
+        <div className="flex justify-center md:mt-10 gap-1 md:gap-2">
+          {users.map((_, index) => (
+            <button
+              key={index}
+              className={`h-1.5 w-1.5 md:h-2 md:w-2 rounded-full ${
+                index === activeIndex ? "bg-primary" : "bg-muted"
+              }`}
+              onClick={() => setActiveIndex(index)}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 } 

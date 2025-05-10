@@ -17,45 +17,6 @@ export function CommunityPage() {
   const summaryPreview = "This is an overall AI summary...";
   const fullSummary = "This is an overall AI summary of the community activity. The text will dynamically update based on user interactions, posts, and other community engagements. It provides insights about trending topics, active discussions, and overall community health.";
 
-  // Sample user data for the carousel
-  const sampleUsers: UserData[] = [
-    {
-      id: "1",
-      profilePicUrl: "https://i.pravatar.cc/300?img=1",
-      name: "Emma Johnson",
-      text1: "Financial Advisor",
-      text2: "Specializes in retirement planning",
-    },
-    {
-      id: "2",
-      profilePicUrl: "https://i.pravatar.cc/300?img=2", 
-      name: "Michael Chen",
-      text1: "Investment Strategist",
-      text2: "Focus on sustainable investments",
-    },
-    {
-      id: "3",
-      profilePicUrl: "https://i.pravatar.cc/300?img=3",
-      name: "Sofia Rodriguez",
-      text1: "Wealth Manager",
-      text2: "Expert in portfolio diversification",
-    },
-    {
-      id: "4",
-      profilePicUrl: "https://i.pravatar.cc/300?img=4",
-      name: "James Wilson",
-      text1: "Tax Consultant",
-      text2: "Specializes in international taxation",
-    },
-    {
-      id: "5",
-      profilePicUrl: "https://i.pravatar.cc/300?img=5",
-      name: "Aisha Patel",
-      text1: "Financial Planner",
-      text2: "Expert in family wealth management",
-    }
-  ];
-
   // Sample data for the user explorer component
   const exploreUsers: ExploreUserData[] = [
     {
@@ -196,7 +157,7 @@ export function CommunityPage() {
       {/* Community Members Section */}
       <div className="w-full">
         <h2 className="text-2xl font-bold text-center">Community Members</h2>
-        <UserCarousel users={sampleUsers} onUserSelect={handleUserSelect} />
+        <UserCarousel onUserSelect={handleUserSelect} />
       </div>
 
       {/* Explore Users Section */}
