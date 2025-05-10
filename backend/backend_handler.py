@@ -1,4 +1,4 @@
-from database_handler import get_person, get_portfolio
+from database_handler import get_person, get_portfolio, get_persons
 from model import Person, Portfolio
 from typing import List
 
@@ -6,6 +6,16 @@ from typing import List
 #---------------
 # This file first retrieves the data from sql and then converts it into model objects
 #---------------
+
+def get_all_persons(cur):
+    persons_data = get_persons(cur)
+    if not persons_data:
+        return None
+    persons = []
+    for user_id in persons_data:
+        person_data = get_overall_user_data(cur, user_id)
+        persons.append(person_data)
+    return persons
 
 
 def get_overall_user_data(cur, user_id: str):
@@ -15,7 +25,7 @@ def get_overall_user_data(cur, user_id: str):
         
     portfolio_data = get_portfolio_data(cur, user_id)
     
-    return Person(userId=user_id, 
+    return Person(userId=str(user_id), 
                 firstName=person_data[1],
                 lastName=person_data[2],
                 friends=person_data[3] or [],

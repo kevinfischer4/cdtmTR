@@ -2,6 +2,7 @@ import time
 import psycopg2
 from urllib.parse import urlparse
 from ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary, generate_user_trader_profile, generate_user_latest_changes
+from risk_handler import calc_risk
 from typing import List
 import csv
 import os
@@ -200,14 +201,14 @@ def set_latest(cur, user_id: str, tradings: str):
     """, (summary, user_id))
 
 
-def set_risk_data(cur, user_id: str, risk_ratio: float, risk_text: str, total_return: float):
+def set_risk_data(cur, user_id: str):
+    risk_ratio, total_return = calc_risk(user_id)
     cur.execute("""
         UPDATE Portfolio
         SET riskRatio = %s, 
-            riskSummary = %s,
             totalReturn = %s
         WHERE userId = %s;
-    """, (risk_ratio, risk_text, total_return, user_id))
+    """, (risk_ratio, total_return, user_id))
     
     
 def set_avatar_link(cur, user_id: str, avatar_link: str):
@@ -250,6 +251,15 @@ def get_portfolio(cur, user_id: str):
         WHERE userId = %s;
     """, (user_id,))
     portfolio = cur.fetchone()
+    return portfolio
+
+
+def get_persons(cur):
+    """
+    Retrieves all data for a portfolio with the given user_id.
+    """
+    cur.execute("""SELECT userId FROM Portfolio;""")
+    portfolio = cur.fetchall()
     return portfolio
 
 

@@ -126,7 +126,8 @@ def compute_risk_scores(pf: vbt.Portfolio) -> dict:
     )
 
     risk_stats = stats[risk_mask]        # still a Series
-    print(risk_stats.to_string())
+    print(risk_stats.keys())
+    return risk_stats
 
 
 def main ():
@@ -292,23 +293,11 @@ def calc_risk(user_id: str):
         )
         
         risk_scores = compute_risk_scores(pf)
-        print(pf.sharpe_ratio(), pf.total_return())
-        return pf.sharpe_ratio(), pf.total_return()
-        #return risk_scores.get('sharpe_ratio', None), risk_scores.get('total_return', None)
-        #print(risk_scores)
-        
-        
-        #positions = pf.positions.records_readable
-        # Filtere die offenen Positionen (Exit Timestamp ist NaN)
-        #open_positions = positions[positions['Exit Timestamp'].isna()]
-
-        # Ausgabe der offenen Positionen mit Symbol und Stückzahl
-        #print("Aktuelle offene Positionen im Portfolio:")
-        #for _, pos in open_positions.iterrows():
-        #    print(
-        #        f"Asset: {pos['Column']}, "
-        #        f"Stückzahl: {pos['Size']}, "  
-        #    )  
+        # print(pf.sharpe_ratio(), pf.total_return())
+        # print(float(pf.sharpe_ratio()), float(pf.total_return()))
+        total_return = risk_scores["Total Return [%]"]
+        sharpe_ratio = risk_scores["Sharpe Ratio"]
+        return sharpe_ratio, total_return
         
     except Exception as e:
         print(f"Error creating portfolio: {e}")
