@@ -10,7 +10,7 @@ def call_api(prompt: str):
     }
     payload = {
         # TODO: Change to latest AI model from Mistral
-        "model": "mistral-medium",  # or "mistral-small", depending on your plan
+        "model": "mistral-large-latest",  # or "mistral-small", depending on your plan
         "messages": [
             {
                 "role": "user",
@@ -23,6 +23,7 @@ def call_api(prompt: str):
     if response.status_code == 200:
         summary = response.json()['choices'][0]['message']['content']
         print("Summary:\n", summary)
+        return summary
     else:
         # TODO: Replace with "Sorry, could not generate summary."
         print("Error:", response.status_code, response.text)
