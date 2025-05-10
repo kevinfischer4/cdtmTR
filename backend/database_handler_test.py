@@ -137,7 +137,7 @@ def main():
     # Lade alle Trades
     trade_data = load_trading_data(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data.csv"))
 
-    # 🔸 Filter auf Benutzer
+    # Filter auf Benutzer
     trade_data = [trade for trade in trade_data if getattr(trade, "user_id", None) == user_id]
 
     if not trade_data:
@@ -271,7 +271,7 @@ def main():
     print(size_matrix.head())
     print(f"Size matrix shape: {size_matrix.shape}")
     
-    # 🔸 init_cash = 0, um keine Bargeldbestände zu berücksichtigen
+    # init_cash = 0, um keine Bargeldbestände zu berücksichtigen
     try:
         pf = vbt.Portfolio.from_orders(
             close=price_data,

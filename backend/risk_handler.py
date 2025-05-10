@@ -1,44 +1,67 @@
-from data_loader import load_trading_data
+from data_loader import load_banking_data, load_trading_data
 import os
 import pandas as pd
 import vectorbt as vbt
-from data_loader import load_trading_data
-from model import Trade
+from data_loader import load_banking_data, load_trading_data
+from model import Trade  # Make sure your models are imported
 import os
 import pandas as pd
 import numpy as np
+from collections import defaultdict
 from datetime import datetime
+    
+
+#"User" = "36fd51ee-dadd-45ee-8577-5a6688463abc"
 
 # Mock ISIN to symbol mapping (replace with your actual asset data or lookup logic)
-ISIN_TO_SYMBOL = { 
-    "US06417N1037": "MCP",
-    "US070450Y1038": "VJET",
-    "DE000SU47L30": "WDI.DE",
-    "KYG9828G1082": "09988.HK",
-    "DE000WACK012": "WAC.DE",
-    "US0921131092": "ADBE",
-    "MHY1771G1026": "MHY.TO",
-    "US98980F1049": "XELA",
-    "US29414B1044": "RPM",
-    "US98980L1017": "XTNT",
-    "IL0011595993": "NICE",
-    "IL0011582033": "TEVA",
-    "SE0000163628": "ERIC-B.ST",
-    "US57060D1081": "MS.LSE",
-    "US5500211090": "ACGL",
-    "US9224751084": "SONY",
-    "LU0974299876": "AMS.PA",
-    "US45784P1012": "ORCL",
-    "US98138H1014": "ZEN"
-}
+#ISIN_TO_SYMBOL = {
+#    "US06417N1037": "MCP",
+#  "US070450Y1038": "VJET",
+ # "DE000SU47L30": "WDI.DE",
+  #"KYG9828G1082": "09988.HK",
+  #"DE000WACK012": "WAC.DE",
+ # "US0921131092": "ADBE",
+ # "MHY1771G1026": "MHY.TO",
+ # "US98980F1049": "XELA",
+ # "US29414B1044": "RPM",
+ # "US98980L1017": "XTNT",
+ # "IL0011595993": "NICE",
+ # "IL0011582033": "TEVA",
+  #"SE0000163628": "ERIC-B.ST",
+  #"US57060D1081": "MS.LSE",
+  #"US5500211090": "ACGL",
+  #"US9224751084": "SONY",
+  #"LU0974299876": "AMS.PA",
+  #"US45784P1012": "ORCL",
+  #"US98138H1014": "ZEN"
 
+#}
+def load_isin_to_symbol_mapping(file_path: str) -> dict:
+    """Load ISIN to symbol mapping from a CSV file."""
+    try:
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"CSV file not found at path: {file_path}")
+        mapping_df = pd.read_csv(file_path)
+        if 'ISIN' not in mapping_df.columns or 'Ticker' not in mapping_df.columns:
+            raise ValueError("CSV file must contain columns 'ISIN' and 'Ticker'.")
+        mapping_df = mapping_df[['ISIN', 'Ticker']].dropna()  # Keep only relevant columns and drop missing values
+        mapping_df.columns = ['isin', 'tracker']  # Rename columns for consistency
+        mapping_df = mapping_df.dropna()  # Remove rows with missing values
+        return dict(zip(mapping_df['isin'], mapping_df['tracker']))
+    except Exception as e:
+        print(f"Error loading ISIN to symbol mapping: {e}")
+        return {}
+        
+# Load ISIN to symbol mapping from the specified file
+ISIN_TO_SYMBOL = load_isin_to_symbol_mapping(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data_tracker.csv"))
 
 def trades_to_dataframe(trades: list[Trade]) -> pd.DataFrame:
     rows = []
     for trade in trades:
         symbol = ISIN_TO_SYMBOL.get(trade.isin)
         if symbol is None:
-            continue 
+            continue  # skip unknown assets
+        # Localize to UTC
         dt = pd.to_datetime(trade.executed_at)
         if dt.tzinfo is None:
             dt = dt.tz_localize('UTC')
@@ -50,22 +73,27 @@ def trades_to_dataframe(trades: list[Trade]) -> pd.DataFrame:
             'isin': trade.isin
         })
     df = pd.DataFrame(rows)
+    print(df)
     return df.sort_values("datetime")
 
+# ------------ helper ---------------------------------------------------------
 
 def build_size_matrix(price_df: pd.DataFrame,
                       trades_df: pd.DataFrame) -> pd.DataFrame:
     """Return matrix aligned 1‑for‑1 with price_df.index (daily)."""
 
+    # ---- 1 · normalise the price index ------------------------------------
     if price_df.index.tz is None:
-        px_index = price_df.index        
+        px_index = price_df.index              # already tz‑naïve
     else:
-        px_index = price_df.index.tz_convert(None)  
-    px_index = px_index.normalize() 
+        px_index = price_df.index.tz_convert(None)   # drop tz info
+    px_index = px_index.normalize()            # force HH:MM:SS → 00:00:00
+
+    # ---- 2 · aggregate trades on the same footing -------------------------
     trades_local = trades_df.copy()
     trades_local['date'] = (
         trades_local['datetime']
-        .dt.tz_localize(None)     
+        .dt.tz_localize(None)                  # safe – no 'errors' kw‑arg
         .dt.normalize()
     )
 
@@ -74,6 +102,8 @@ def build_size_matrix(price_df: pd.DataFrame,
                  .sum()
                  .unstack(fill_value=0))
 
+    # ---- 3 · align rows & columns -----------------------------------------
+    # Check if price_df is a Series and convert to DataFrame if needed
     if isinstance(price_df, pd.Series):
         price_df = pd.DataFrame(price_df)
         
@@ -81,30 +111,43 @@ def build_size_matrix(price_df: pd.DataFrame,
                    .reindex(px_index, fill_value=0)
                    .reindex(price_df.columns, axis=1, fill_value=0))
 
+    # keep zeros: 0 means "no order" for vectorbt.from_orders
     return size_matrix
 
 
 
 def compute_risk_scores(pf: vbt.Portfolio) -> dict:
     """Liefert Risk‑Kennzahlen, egal wie die Labels in pf.stats() heißen."""
-    stats = pf.stats() 
+    stats = pf.stats()                      # Series (ein Portfoliokol)
+    # pick the rows whose label contains one of these substrings
     risk_mask = stats.index.str.contains(
         'volatility|drawdown|var|cvar|risk|sharpe|sortino|return|trade',   # add/remove terms
         case=False, regex=True
     )
 
-    risk_stats = stats[risk_mask] 
+    risk_stats = stats[risk_mask]        # still a Series
     print(risk_stats.to_string())
-    
-    
-    
-def main():
-    user_id = "01c56b98-55fa-4d8a-ae53-e55192fc9718"
+
+
+def main ():
+    # Beispielaufruf
+    user_id1 = "01c56b98-55fa-4d8a-ae53-e55192fc9718"
+    user_id2 = "00909ba7-ad01-42f1-9074-2773c7d3cf2c"
+    user_id3 = "92a7f63d-8515-4440-a61e-6e3101fc7a46"
+    user_id4 = "36fd51ee-dadd-45ee-8577-5a6688463abc"
+    calc_risk(user_id1)
+    calc_risk(user_id2)
+    calc_risk(user_id3)
+    calc_risk(user_id4)
+
+
+def calc_risk(user_id: str):
+        
 
     # Lade alle Trades
     trade_data = load_trading_data(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data.csv"))
 
-    # 🔸 Filter auf Benutzer
+    # Filter auf Benutzer
     trade_data = [trade for trade in trade_data if getattr(trade, "user_id", None) == user_id]
 
     if not trade_data:
@@ -238,7 +281,7 @@ def main():
     print(size_matrix.head())
     print(f"Size matrix shape: {size_matrix.shape}")
     
-    # 🔸 init_cash = 0, um keine Bargeldbestände zu berücksichtigen
+    # init_cash = 0, um keine Bargeldbestände zu berücksichtigen
     try:
         pf = vbt.Portfolio.from_orders(
             close=price_data,
@@ -249,7 +292,24 @@ def main():
         )
         
         risk_scores = compute_risk_scores(pf)
-        print(risk_scores)
+        print(pf.sharpe_ratio(), pf.total_return())
+        return pf.sharpe_ratio(), pf.total_return()
+        #return risk_scores.get('sharpe_ratio', None), risk_scores.get('total_return', None)
+        #print(risk_scores)
+        
+        
+        #positions = pf.positions.records_readable
+        # Filtere die offenen Positionen (Exit Timestamp ist NaN)
+        #open_positions = positions[positions['Exit Timestamp'].isna()]
+
+        # Ausgabe der offenen Positionen mit Symbol und Stückzahl
+        #print("Aktuelle offene Positionen im Portfolio:")
+        #for _, pos in open_positions.iterrows():
+        #    print(
+        #        f"Asset: {pos['Column']}, "
+        #        f"Stückzahl: {pos['Size']}, "  
+        #    )  
+        
     except Exception as e:
         print(f"Error creating portfolio: {e}")
         print("Portfolio creation failed. Check that price_data and size_matrix are properly aligned.")
