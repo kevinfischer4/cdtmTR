@@ -1,0 +1,74 @@
+import requests
+from typing import List
+
+def call_api(prompt: str):
+    API_KEY = 'cxS27JBQsBfFenit5BvwlPPFSQ7DWaNw'
+    url = 'https://api.mistral.ai/v1/chat/completions'
+    headers = {
+        'Authorization': f'Bearer {API_KEY}',
+        'Content-Type': 'application/json'
+    }
+    payload = {
+        # TODO: Change to latest AI model from Mistral
+        "model": "mistral-medium",  # or "mistral-small", depending on your plan
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "temperature": 0.7  # Control randomness (0 = deterministic, 1 = creative)
+    }
+    response = requests.post(url, headers=headers, json=payload)
+    if response.status_code == 200:
+        summary = response.json()['choices'][0]['message']['content']
+        print("Summary:\n", summary)
+    else:
+        # TODO: Replace with "Sorry, could not generate summary."
+        print("Error:", response.status_code, response.text)
+
+
+def generate_friend_summary(friend_names: List[str], friend_portfolio_summaries: List[str]):
+    instruction_prompt = f"""Your task is to generate a short summary on the provided portfolio summaries of friends of the user.
+    Summarize the friend portfolios using the provided data.
+    Answer shortly in max. two sentences.\n
+    Here is the data: \n"""
+    for i, friend_name in enumerate(friend_names):
+        instruction_prompt += f"Summary of friend {friend_name}: {friend_portfolio_summaries[i]} \n\n\n"
+    return call_api(instruction_prompt)
+    
+
+def generate_user_trader_profile(tradings: str):
+    instruction_prompt = f"""Your task is to generate a short trader profile of the person and the provided data.
+    Cosider the trading frequency, asset distrebution and other important stuff.
+    Answer shortly in max. two sentences. \n
+    Here is the data: {tradings}"""
+    return call_api(instruction_prompt)
+
+
+def generate_user_latest_changes(tradings: str):
+    instruction_prompt = f"""Your task is to summarize the latest activity of the user on the provided data. 
+    Answer shortly in max. two sentences. \n
+    Here is the data: {tradings}"""
+    return call_api(instruction_prompt)
+
+
+def generate_portfolio_summary(trading_data: str, transaction_data: str):
+    instruction_prompt = f"""Your task is to generate a finance portfolio summary on the provided data. 
+    Summarize the assets, regions and industry. 
+    The data is split into trading data and transaction data.
+    Answer shortly in max. 4 sentences. \n
+    Here is the trading data: {trading_data}\n\n\n
+    Here is the transaction data: {transaction_data}"""
+    return call_api(instruction_prompt)
+
+
+def generate_risk_summary(trading_data: str, transaction_data: str):
+    instruction_prompt = f"""Your task is to generate a scientific risk summary for the following data. 
+    Evaluate whether the given data is risky or valid. 
+    The data is split into trading data and transaction data.
+    Answer shortly in max. two sentences. \n
+    Here is the trading data: {trading_data}\n\n\n
+    Here is the transaction data: {transaction_data}"""
+    return call_api(instruction_prompt)
+    

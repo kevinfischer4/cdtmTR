@@ -92,18 +92,18 @@ class Asset(BaseModel):
 # App models
 # --------------
 
-
-class Risk(BaseModel):
-    summary: str = Field(alias="summary")
-    ratio: float = Field(alias="ratio")
-    
     
 class Portfolio(BaseModel):
     user_id: str = Field(alias="userId")
-    assets: List[Asset] = Field(alias="assets")
-    trades: List[Trade] = Field(alias="trades")
+    asset_names: List[str] = Field(alias="assetNames")
+    asset_amounts: List[float] = Field(alias="assetAmounts")
     summary: str = Field(alias="summary")
-    risk: Risk = Field(alias="risk")
+    risk_summary: str = Field(alias="riskSummary")
+    risk_ratio: float = Field(alias="riskRatio")
+    total_risk: float = Field(alias="totalRisk")
+    total_return: float = Field(alias="totalReturn")
+    tradings: str = Field(alias="tradings")
+    transactions: str = Field(alias="transactions")
 
 
 class Person(BaseModel):
@@ -112,7 +112,9 @@ class Person(BaseModel):
     last_name: str = Field(alias="lastName")
     friends: List[str] = Field(alias="friends")
     avatar_link: str = Field(alias="avatarLink")
-    description: Optional[str] = Field(alias="description", default=None)
+    trader_profile: str = Field(alias="traderProfile")
+    latest: str = Field(alias="latest")
+    summary: Optional[str] = Field(alias="summary", default=None)
     portfolio: Portfolio = Field(alias="portfolio")
     
     

@@ -1,131 +1,244 @@
-from data_loader import load_banking_data, load_trading_data
-import os
-import pandas as pd
-import vectorbt as vbt
-from data_loader import load_banking_data, load_trading_data
-from model import Trade, Risk  # Make sure your models are imported
-import os
-import pandas as pd
-import numpy as np
-from collections import defaultdict
-from datetime import datetime
+import psycopg2
+from urllib.parse import urlparse
+from ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary, generate_user_trader_profile, generate_user_latest_changes
+from typing import List
+
+db_uri = "postgres://uaotb2ktauua4h:pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dddma3ir06vhdo"
+
+result = urlparse(db_uri)
+username = "uaotb2ktauua4h"
+password = "pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c"
+database = result.path.lstrip('/')
+hostname = result.hostname
+port = result.port
+
+def connect_to_database():
+    try:
+        conn = psycopg2.connect(
+            dbname=database,
+            user=username,
+            password=password,
+            host=hostname,
+            port=port
+        )
+        print("Connection successful!")
+        
+        cur = conn.cursor()
+        return cur, conn
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None, None
+    
+    
+def close_connection(cur, conn):
+    cur.close()
+    conn.close()
+    
+    
+def create_tables(cur):
+    cur.execute("""CREATE TABLE Person (
+        userId UUID PRIMARY KEY,
+        firstName TEXT NOT NULL,
+        lastName TEXT NOT NULL,
+        friends TEXT[],
+        avatarLink TEXT,
+        summary TEXT,
+        traderProfile TEXT,
+        latest TEXT);""")
+    cur.execute("""CREATE TABLE Portfolio (
+        userId UUID PRIMARY KEY,
+        assetNames TEXT[],      
+        assetAmounts FLOAT8[], 
+        tradings TEXT,
+        transactions TEXT,
+        summary TEXT,
+        totalReturn FLOAT8[],
+        riskSummary TEXT,
+        riskRatio FLOAT8[],
+        totalRisk FLOAT8[]);""")
+    cur.execute("""CREATE TABLE Tradings (
+        userId UUID NOT NULL,
+        executedAt TIMESTAMP NOT NULL,
+        ISIN VARCHAR(20) NOT NULL,
+        direction VARCHAR(20) NOT NULL,
+        executionSize FLOAT8 NOT NULL,
+        executionPrice FLOAT8 NOT NULL,
+        currency VARCHAR(3) NOT NULL,
+        executionFee FLOAT8 NOT NULL,
+        type TEXT);""")
+    cur.execute("""CREATE TABLE Transactions (
+        userId UUID NOT NULL,
+        bookingDate DATE NOT NULL,
+        side VARCHAR(20) NOT NULL,
+        amount FLOAT8 NOT NULL,
+        currency VARCHAR(20) NOT NULL,
+        type VARCHAR(20) NOT NULL,
+        mcc TEXT);""")
+    
+    
+def insert_user(cur, user_id: str):
+    result = call_api("Generate a random firstname and a lastname, seperated with a comma. Only output the firstname and lastname, nothing else. Format: FIRSTNAME, LASTNAME").split(",")
+    first_name = result[0]
+    last_name = result[1]
+    cur.execute("""
+        INSERT INTO Person (
+            userId,
+            firstName,
+            lastName,
+            friends,
+            avatarLink,
+            summary,
+            traderProfile,
+            latest
+        ) VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s
+        );
+    """, (
+        user_id, # userId (UUID)
+        first_name, # firstName
+        last_name, # lastName
+        [], # friends (TEXT[])
+        'https://example.com/avatar.jpg', # avatarLink
+        '', # summary of friend activity
+        '', # traderProfile
+        '' # latest
+    ))
+
+
+def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: List[float], tradings: str, transactions: str):
+    summary = generate_portfolio_summary(tradings, transactions)
+    risk_summary = generate_risk_summary(tradings, transactions)
+    cur.execute("""
+        INSERT INTO Portfolio (
+            userId,
+            assetNames,      
+            assetAmounts, 
+            tradings,
+            transactions,
+            summary,
+            totalReturn,
+            riskSummary,
+            riskRatio,
+            totalRisk
+        ) VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        );
+    """, (
+        user_id, # userId (UUID)
+        asset_names,
+        asset_amounts,
+        tradings,
+        transactions,
+        summary,
+        0.0,
+        risk_summary,
+        0.0,
+        0.0
+    ))
+    # TODO: Calculation
+
+
+def add_friend(cur, user_id: str, friend_id: str):
+    """
+    Adds a friend_id to the 'friends' array of the specified user_id in the Person table.
+    If the friends array is NULL, it initializes it first.
+    """
+    cur.execute("""
+        UPDATE Person
+        SET friends = COALESCE(friends, ARRAY[]::TEXT[]) || %s
+        WHERE userId = %s;
+    """, (friend_id, user_id))
     
 
-
-# Mock ISIN to symbol mapping (replace with your actual asset data or lookup logic)
-ISIN_TO_SYMBOL = {
-    "CNE100000296": "BYDDF",
-    "US29786A1060": "ETSY", 
-    # "US64110L1061": "NFLX", 
-    # ... add more
-}
-
-def trades_to_dataframe(trades: list[Trade]) -> pd.DataFrame:
-    rows = []
-    for trade in trades:
-        symbol = ISIN_TO_SYMBOL.get(trade.isin)
-        if symbol is None:
-            continue  # skip unknown assets
-        # Localize to UTC
-        dt = pd.to_datetime(trade.executed_at)
-        if dt.tzinfo is None:
-            dt = dt.tz_localize('UTC')
-        rows.append({
-            'datetime': dt,
-            'symbol': symbol,
-            'quantity': float(trade.execution_size) if trade.direction == "BUY" else -float(trade.execution_size),
-            'price': float(trade.execution_price),
-            'isin': trade.isin
-        })
-    df = pd.DataFrame(rows)
-    print(df)
-    return df.sort_values("datetime")
-
-# ------------ helper ---------------------------------------------------------
-
-def build_size_matrix(price_df: pd.DataFrame,
-                      trades_df: pd.DataFrame) -> pd.DataFrame:
-    """Return matrix aligned 1‑for‑1 with price_df.index (daily)."""
-
-    # ---- 1 · normalise the price index ------------------------------------
-    if price_df.index.tz is None:
-        px_index = price_df.index              # already tz‑naïve
-    else:
-        px_index = price_df.index.tz_convert(None)   # drop tz info
-    px_index = px_index.normalize()            # force HH:MM:SS → 00:00:00
-
-    # ---- 2 · aggregate trades on the same footing -------------------------
-    trades_local = trades_df.copy()
-    trades_local['date'] = (
-        trades_local['datetime']
-        .dt.tz_localize(None)                  # safe – no 'errors' kw‑arg
-        .dt.normalize()
-    )
-
-    daily_agg = (trades_local
-                 .groupby(['date', 'symbol'])['quantity']
-                 .sum()
-                 .unstack(fill_value=0))
-
-    # ---- 3 · align rows & columns -----------------------------------------
-    size_matrix = (daily_agg
-                   .reindex(px_index, fill_value=0)
-                   .reindex(price_df.columns, axis=1, fill_value=0))
-
-    # keep zeros: 0 means “no order” for vectorbt.from_orders
-    return size_matrix
+def set_summary(cur, user_id: str, friend_names: List[str], friend_portfolio_summaries: List[str]):
+    """
+    Updates the friend summary field for a given user_id in the Person table.
+    """
+    summary = generate_friend_summary(friend_names, friend_portfolio_summaries)
+    cur.execute("""
+        UPDATE Person
+        SET summary = %s
+        WHERE userId = %s;
+    """, (summary, user_id))
+    
+    
+def set_trader_profile(cur, user_id: str, tradings: str):
+    """
+    Updates the latest changes for a given user_id in the Person table.
+    """
+    summary = generate_user_latest_changes(tradings)
+    cur.execute("""
+        UPDATE Person
+        SET latest = %s
+        WHERE userId = %s;
+    """, (summary, user_id))
+    
+    
+def set_latest(cur, user_id: str, tradings: str):
+    """
+    Updates the trader profile field for a given user_id in the Person table.
+    """
+    summary = generate_user_trader_profile(tradings)
+    cur.execute("""
+        UPDATE Person
+        SET traderProfile = %s
+        WHERE userId = %s;
+    """, (summary, user_id))
 
 
+def set_risk_data(cur, user_id: str, risk_ratio: float, risk_text: str, total_risk: float):
+    cur.execute("""
+        UPDATE Portfolio
+        SET riskRatio = %s, 
+            riskSummary = %s,
+            totalRisk = %s
+        WHERE userId = %s;
+    """, (risk_ratio, risk_text, total_risk, user_id))
+    
+    
+def set_avatar_link(cur, user_id: str, avatar_link: str):
+    cur.execute("""
+        UPDATE Person
+        SET avatarLink = %s
+        WHERE userId = %s;
+    """, (avatar_link, user_id))
 
-def compute_risk_scores(pf: vbt.Portfolio) -> dict:
-    """Liefert Risk‑Kennzahlen, egal wie die Labels in pf.stats() heißen."""
-    stats = pf.stats()                      # Series (ein Portfoliokol)
-    # pick the rows whose label contains one of these substrings
-    risk_mask = stats.index.str.contains(
-        'volatility|drawdown|var|cvar|risk|sharpe|sortino|return|trade',   # add/remove terms
-        case=False, regex=True
-    )
 
-    risk_stats = stats[risk_mask]        # still a Series
-    print(risk_stats.to_string())
+def get_person(cur, user_id: str):
+    """
+    Retrieves all data for a person with the given user_id.
+    """
+    cur.execute("""
+        SELECT * FROM Person
+        WHERE userId = %s;
+    """, (user_id,))
+    person = cur.fetchone()
+    return person
+
+
+def get_portfolio(cur, user_id: str):
+    """
+    Retrieves all data for a portfolio with the given user_id.
+    """
+    cur.execute("""
+        SELECT * FROM Portfolio
+        WHERE userId = %s;
+    """, (user_id,))
+    portfolio = cur.fetchone()
+    return portfolio
 
 
 def main():
-    trade_data = load_trading_data(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data.csv"))
-    trade_data = trade_data
-
-    # This looks good, format is n x 5 with Symbol, Number, Number, ISIN
-    trades_df = trades_to_dataframe(trade_data)
-
-    if trades_df.empty:
-        print("No valid trades found.")
-        return
-
-    symbols = trades_df["symbol"].unique().tolist()
-    start_date = trades_df["datetime"].min().strftime("%Y-%m-%d")
-
-    # Fetch price data, shape is n x m with n trading days and m symbols
-    price_data = vbt.YFData.download(symbols, start=start_date).get("Close")
-
-    
-    price_data = price_data.tz_localize(None)
-    price_data.index = price_data.index.normalize()
-
-    # 1. Build the order‑size matrix
-    size_matrix = build_size_matrix(price_data, trades_df)
-
-    # 2. Portfolio
-    pf = vbt.Portfolio.from_orders(
-        close=price_data,
-        size=size_matrix,       # zeros are OK – mean “no order”
-        size_type='amount',
-        init_cash=100_000,
-        freq='D'  
-    )
-
-    # 3. Risk metrics
-    risk_scores = compute_risk_scores(pf)
+    cur, conn = connect_to_database()
+    if cur and conn:
+        create_tables(cur)
+        conn.commit()
+        close_connection(cur, conn)
 
 
 if __name__ == "__main__":
     main()
+    
+    
+    
+    
