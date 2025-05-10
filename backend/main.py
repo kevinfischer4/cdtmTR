@@ -1,8 +1,16 @@
 from fastapi import FastAPI
 from backend_handler import get_overall_user_data, get_friends_data, get_portfolio_data
 from database_handler import connect_to_database
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://your-react-app.netlify.app"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 cur, conn = connect_to_database()
 
 @app.get("/user/")
