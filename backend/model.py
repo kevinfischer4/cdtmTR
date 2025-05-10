@@ -101,6 +101,7 @@ class Portfolio(BaseModel):
     risk_summary: str = Field(alias="riskSummary")
     risk_ratio: float = Field(alias="riskRatio")
     total_risk: float = Field(alias="totalRisk")
+    total_return: float = Field(alias="totalReturn")
     tradings: str = Field(alias="tradings")
     transactions: str = Field(alias="transactions")
 

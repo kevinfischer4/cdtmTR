@@ -20,15 +20,16 @@ def get_portfolio_data(cur, user_id: str):
                      assetNames=portfolio[1],
                      assetAmounts=portfolio[2],
                      summary=portfolio[3],
-                     riskSummary=portfolio[4],
-                     riskRatio=portfolio[5],
-                     totalRisk=portfolio[6],
-                     tradings=portfolio[7],
-                     transactions=portfolio[8])
+                     totalReturn=portfolio[4],
+                     riskSummary=portfolio[5],
+                     riskRatio=portfolio[6],
+                     totalRisk=portfolio[7],
+                     tradings=portfolio[8],
+                     transactions=portfolio[9])
                      
     
 
-def get_friends(cur, user_id: str) -> List[Person]:
+def get_friends_data(cur, user_id: str) -> List[Person]:
     friends: List[str] = get_overall_user_data(cur, user_id).friends
     friend_objects = []
     for friend_id in friends:

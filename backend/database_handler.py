@@ -1,7 +1,7 @@
 import psycopg2
 from urllib.parse import urlparse
 from ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary
-from backend_handler import get_friends, get_portfolio_data
+from backend_handler import get_friends_data, get_portfolio_data
 from typing import List
 
 db_uri = "postgres://uaotb2ktauua4h:pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dddma3ir06vhdo"
@@ -52,6 +52,7 @@ def create_tables(cur):
         tradings TEXT,
         transactions TEXT,
         summary TEXT,
+        totalReturn FLOAT8[],
         riskSummary TEXT,
         riskRatio FLOAT8[],
         totalRisk FLOAT8[]);""")
@@ -115,11 +116,12 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
             tradings,
             transactions,
             summary,
+            totalReturn,
             riskSummary,
             riskRatio,
             totalRisk
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         );
     """, (
         user_id, # userId (UUID)
@@ -128,10 +130,12 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
         tradings,
         transactions,
         summary,
+        0.0,
         risk_summary,
         0.0,
         0.0
     ))
+    # TODO: Calculation
 
 
 def add_friend(cur, user_id: str, friend_id: str):
@@ -150,7 +154,7 @@ def set_summary(cur, user_id: str, summary: str):
     """
     Updates the friend summary field for a given user_id in the Person table.
     """
-    friends = get_friends(user_id)
+    friends = get_friends_data(user_id)
     friend_names = [friend.first_name for friend in friends]
     friend_portfolio_summaries = []
     for friend in friends:
