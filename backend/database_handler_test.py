@@ -37,6 +37,7 @@ ISIN_TO_SYMBOL = {
 
 }
 
+
 def trades_to_dataframe(trades: list[Trade]) -> pd.DataFrame:
     rows = []
     for trade in trades:
@@ -263,6 +264,20 @@ def main():
         
         risk_scores = compute_risk_scores(pf)
         print(risk_scores)
+        
+        
+        #positions = pf.positions.records_readable
+        # Filtere die offenen Positionen (Exit Timestamp ist NaN)
+        #open_positions = positions[positions['Exit Timestamp'].isna()]
+
+        # Ausgabe der offenen Positionen mit Symbol und Stückzahl
+        #print("Aktuelle offene Positionen im Portfolio:")
+        #for _, pos in open_positions.iterrows():
+        #    print(
+        #        f"Asset: {pos['Column']}, "
+        #        f"Stückzahl: {pos['Size']}, "  
+        #    )  
+        
     except Exception as e:
         print(f"Error creating portfolio: {e}")
         print("Portfolio creation failed. Check that price_data and size_matrix are properly aligned.")
