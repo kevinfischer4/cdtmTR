@@ -112,18 +112,18 @@ def set_user_attributes(cur, user_id: str):
 if __name__ == "__main__":
     cur, conn = connect_to_database()
     if cur and conn:
-        persons = get_all_persons(cur)
-        for person in persons:
-            set_risk_data(cur, person.user_id)
-        conn.commit()
+        # persons = get_all_persons(cur)
+        # for person in persons:
+        #     set_risk_data(cur, person.user_id)
+        # conn.commit()
         # create_tables(cur)
         # conn.commit()
         # insert_n_users_from_trading_data(cur, 20)
         # user_ids = create_portfolios_from_trading_data(cur, 20)
         # conn.commit()
-        # add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "016e4ff3-91b2-490f-9c1e-a09defe004b2")
-        # add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "01c56b98-55fa-4d8a-ae53-e55192fc9718")
-        # conn.commit()
+        add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "07d7d7d0-5d22-450b-8102-ad2eeaad6034")
+        add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "12d21500-130a-43a9-a455-d352abbfe7f3")
+        conn.commit()
         # for user_id in user_ids:
         #     set_user_attributes(cur, user_id)
         #     conn.commit()
