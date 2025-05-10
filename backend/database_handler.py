@@ -6,6 +6,7 @@ from typing import List
 import csv
 import os
 import random
+import pandas as pd
 
 db_uri = "postgres://uaotb2ktauua4h:pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dddma3ir06vhdo"
 
