@@ -1,7 +1,6 @@
 import psycopg2
 from urllib.parse import urlparse
 from ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary
-from backend_handler import get_friends_data, get_portfolio_data
 from typing import List
 
 db_uri = "postgres://uaotb2ktauua4h:pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dddma3ir06vhdo"
@@ -25,9 +24,10 @@ def connect_to_database():
         print("Connection successful!")
         
         cur = conn.cursor()
-        return cur
+        return cur, conn
     except Exception as e:
         print(f"An error occurred: {e}")
+        return None, None
     
     
 def close_connection(cur, conn):
@@ -150,16 +150,10 @@ def add_friend(cur, user_id: str, friend_id: str):
     """, (friend_id, user_id))
     
 
-def set_summary(cur, user_id: str, summary: str):
+def set_summary(cur, user_id: str, friend_names: List[str], friend_portfolio_summaries: List[str]):
     """
     Updates the friend summary field for a given user_id in the Person table.
     """
-    friends = get_friends_data(user_id)
-    friend_names = [friend.first_name for friend in friends]
-    friend_portfolio_summaries = []
-    for friend in friends:
-        portfolio_data = get_portfolio_data(cur, friend.user_id)
-        friend_portfolio_summaries.append(portfolio_data.summary)
     summary = generate_friend_summary(friend_names, friend_portfolio_summaries)
     cur.execute("""
         UPDATE Person
@@ -171,16 +165,16 @@ def set_summary(cur, user_id: str, summary: str):
 def set_risk_data(cur, user_id: str, risk_ratio: float, risk_text: str, total_risk: float):
     cur.execute("""
         UPDATE Portfolio
-        SET riskRatio = %s
-        SET riskText = %s
-        SET totalRisk = %s
+        SET riskRatio = %s, 
+            riskSummary = %s,
+            totalRisk = %s
         WHERE userId = %s;
     """, (risk_ratio, risk_text, total_risk, user_id))
     
     
 def set_avatar_link(cur, user_id: str, avatar_link: str):
     cur.execute("""
-        UPDATE Portfolio
+        UPDATE Person
         SET avatarLink = %s
         WHERE userId = %s;
     """, (avatar_link, user_id))
@@ -210,6 +204,17 @@ def get_portfolio(cur, user_id: str):
     return portfolio
 
 
+def main():
+    cur, conn = connect_to_database()
+    if cur and conn:
+        create_tables(cur)
+        conn.commit()
+        close_connection(cur, conn)
+
+
 if __name__ == "__main__":
-    cur = connect_to_database()
-    create_tables(cur)
+    main()
+    
+    
+    
+    
