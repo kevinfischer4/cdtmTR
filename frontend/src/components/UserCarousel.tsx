@@ -21,7 +21,12 @@ export function UserCarousel({ users, className = "", onUserSelect }: UserCarous
   const [activeIndex, setActiveIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
 
   // Check if screen is mobile size on mount and window resize
   useEffect(() => {
@@ -58,6 +63,30 @@ export function UserCarousel({ users, className = "", onUserSelect }: UserCarous
   const handleCardClick = (user: UserData) => {
     if (onUserSelect) {
       onUserSelect(user);
+    }
+  };
+
+  // Touch event handlers
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      handleNext();
+    } else if (isRightSwipe) {
+      handlePrev();
     }
   };
 
@@ -142,6 +171,9 @@ export function UserCarousel({ users, className = "", onUserSelect }: UserCarous
         ref={containerRef}
         className="relative flex justify-center items-center h-[380px] md:h-[450px] pointer-events-none"
         onTransitionEnd={handleTransitionEnd}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
         {users.map((user, index) => {
           const { transform, scale, opacity, zIndex, display } = getCardPosition(index);
