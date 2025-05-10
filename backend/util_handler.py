@@ -1,6 +1,6 @@
-from database_handler import add_friend, insert_portfolio
-from backend_handler import get_friends_data, get_portfolio_data, get_all_persons
-from database_handler import connect_to_database, close_connection, insert_portfolio, insert_user, set_summary, set_trader_profile, set_latest, create_tables, set_risk_data
+from .database_handler import add_friend, insert_portfolio
+from .backend_handler import get_friends_data, get_portfolio_data, get_all_persons
+from .database_handler import connect_to_database, close_connection, insert_portfolio, insert_user, set_summary, set_trader_profile, set_latest, create_tables, set_risk_data
 import os
 import csv
 import json

@@ -1,6 +1,6 @@
 import csv
 from pathlib import Path
-from model import Transaction, Trade
+from .model import Transaction, Trade
 
 def _read_csv(path: str | Path):
     with Path(path).open(newline="", encoding="utf-8") as fh:

@@ -1,9 +1,9 @@
-from data_loader import load_banking_data, load_trading_data
+from .data_loader import load_banking_data, load_trading_data
 import os
 import pandas as pd
 import vectorbt as vbt
-from data_loader import load_banking_data, load_trading_data
-from model import Trade  # Make sure your models are imported
+from .data_loader import load_banking_data, load_trading_data
+from .model import Trade  # Make sure your models are imported
 import os
 import pandas as pd
 import numpy as np

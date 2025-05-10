@@ -1,8 +1,8 @@
 import time
 import psycopg2
 from urllib.parse import urlparse
-from ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary, generate_user_trader_profile, generate_user_latest_changes
-from risk_handler import calc_risk
+from .ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary, generate_user_trader_profile, generate_user_latest_changes
+from .risk_handler import calc_risk
 from typing import List
 import csv
 import os

@@ -1,5 +1,5 @@
-from database_handler import get_person, get_portfolio, get_persons
-from model import Person, Portfolio
+from .database_handler import get_person, get_portfolio, get_persons
+from .model import Person, Portfolio
 from typing import List
 
 
