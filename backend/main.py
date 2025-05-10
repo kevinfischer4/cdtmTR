@@ -19,8 +19,8 @@ async def get_friends_data(user_id: str):
         friends.append({
             "firstName": friend.first_name,
             "lastName": friend.last_name,
-            "traderProfile": "",
-            "latest": "",
+            "traderProfile": friend.trader_profile,
+            "latest": friend.latest,
             "avatarLink": friend.avatar_link
         })
     return friends
