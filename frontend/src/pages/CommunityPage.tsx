@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card"
 import { useState } from "react"
 import { ChevronDown, ChevronUp, Volume2, VolumeX } from "lucide-react"
 import { UserCarousel, UserData } from "@/components/UserCarousel"
