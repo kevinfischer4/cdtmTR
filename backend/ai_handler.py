@@ -45,11 +45,13 @@ def generate_user_trader_profile(tradings: str):
     Here is the data: {tradings}"""
     return call_api(instruction_prompt)
 
+
 def generate_user_latest_changes(tradings: str):
     instruction_prompt = f"""Your task is to summarize the latest activity of the user on the provided data. 
     Answer shortly in max. two sentences. \n
     Here is the data: {tradings}"""
     return call_api(instruction_prompt)
+
 
 def generate_portfolio_summary(trading_data: str, transaction_data: str):
     instruction_prompt = f"""Your task is to generate a finance portfolio summary on the provided data. 
@@ -59,6 +61,7 @@ def generate_portfolio_summary(trading_data: str, transaction_data: str):
     Here is the trading data: {trading_data}\n\n\n
     Here is the transaction data: {transaction_data}"""
     return call_api(instruction_prompt)
+
 
 def generate_risk_summary(trading_data: str, transaction_data: str):
     instruction_prompt = f"""Your task is to generate a scientific risk summary for the following data. 

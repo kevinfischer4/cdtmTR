@@ -2,6 +2,12 @@ from database_handler import get_person, get_portfolio
 from model import Person, Portfolio
 from typing import List
 
+
+#---------------
+# This file first retrieves the data from sql and then converts it into model objects
+#---------------
+
+
 def get_overall_user_data(cur, user_id: str):
     person_data = get_person(cur, user_id)
     if not person_data:
@@ -49,9 +55,3 @@ def get_friends_data(cur, user_id: str) -> List[Person]:
             friend_objects.append(friend_data)
     return friend_objects
         
-
-def get_user_details(user_id: str, category: str):
-    return {"summary": "test-summary",
-        "riskRatio": 3.0,
-        "riskText": "risk is risky",
-        "assets": {"TEST_ASSET_NAME": 67.0, "TEST_ASSET_2": 23.0}}
