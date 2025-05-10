@@ -26,6 +26,7 @@ async def get_api_friends_data(user_id: str):
     friends = []
     for friend in friends_objects:
         friends.append({
+            "userId": friend.user_id,
             "firstName": friend.first_name,
             "lastName": friend.last_name,
             "traderProfile": friend.trader_profile,
