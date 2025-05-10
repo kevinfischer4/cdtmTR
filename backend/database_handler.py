@@ -57,10 +57,10 @@ def create_tables(cur):
         tradings TEXT,
         transactions TEXT,
         summary TEXT,
-        totalReturn FLOAT8[],
+        totalReturn FLOAT8,
         riskSummary TEXT,
-        riskRatio FLOAT8[],
-        totalRisk FLOAT8[]);""")
+        riskRatio FLOAT8,
+        totalRisk FLOAT8);""")
     cur.execute("""CREATE TABLE Tradings (
         userId UUID NOT NULL,
         executedAt TIMESTAMP NOT NULL,
@@ -288,7 +288,7 @@ def main():
     if cur and conn:
         try:
             # Uncomment the line below to create tables
-            # create_tables(cur)
+            create_tables(cur)
             
             # Example: Insert the first 5 users from the trading data
             inserted_users = insert_n_users_from_trading_data(cur, conn, 100)
