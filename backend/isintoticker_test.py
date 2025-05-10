@@ -1,61 +1,54 @@
 import pandas as pd
-import requests
-import vectorbt as vbt
 import yfinance as yf
-from data_loader import load_banking_data, load_trading_data
-import os
-import pandas as pd
-import vectorbt as vbt
-from data_loader import load_banking_data, load_trading_data
-from model import Trade, Risk  # Make sure your models are imported
-import os
-import pandas as pd
-import numpy as np
-from collections import defaultdict
-from datetime import datetime
 
 # --- Konfiguration ---
-OPENFIGI_API_KEY = 'f2f77183-a421-412f-95e2-8639b600f895'  # Ersetze durch deinen OpenFIGI API-Schlüssel
-USER_ID = '36fd51ee-dadd-45ee-8577-5a6688463abc'           # Ersetze durch die gewünschte Benutzer-ID
+INPUT_CSV_PATH = r"C:\Users\cmgue\Downloads\trading_sample_data.csv"  # Pfad zur Eingabedatei
+OUTPUT_CSV_PATH = r"C:\Users\cmgue\Downloads\trading_sample_data - Copy.csv"  # Pfad zur Ausgabedatei
 
-# --- 1. Transaktionsdaten laden ---
-# Beispiel: Lade Transaktionen aus einer CSV-Datei
-# Du kannst diesen Teil anpassen, um Daten aus deiner Datenbank zu laden
-# Lade alle Trades
-trade_data = load_trading_data(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data.csv"))
+# --- 1. Transaktionsdaten aus CSV laden ---
+print(f"Lade Transaktionsdaten aus {INPUT_CSV_PATH}...")
+try:
+    trade_data = pd.read_csv(INPUT_CSV_PATH)
+    print("Transaktionsdaten erfolgreich geladen.")
+except FileNotFoundError:
+    print(f"Fehler: Datei {INPUT_CSV_PATH} nicht gefunden.")
+    exit()
 
-    # 🔸 Filter auf Benutzer
-trade_data = [trade for trade in trade_data if getattr(trade, "user_id", None) == USER_ID]
-trade_data = pd.DataFrame(trade_data)
+# Debug: Zeige die ersten Zeilen der Transaktionsdaten
+print("Vorschau der Transaktionsdaten:")
+print(trade_data.head())
 
 # --- 2. ISINs extrahieren ---
-unique_isins = trade_data['ISIN'].unique().tolist()
+if 'ISIN' not in trade_data.columns:
+    print("Fehler: Die Spalte 'ISIN' fehlt in der Eingabedatei.")
+    exit()
 
-# --- 3. ISIN zu Ticker-Mapping über OpenFIGI ---
-def map_isins_to_tickers(isins):
-    headers = {
-        'Content-Type': 'application/json',
-        'X-OPENFIGI-APIKEY': OPENFIGI_API_KEY
-    }
-    mappings = [{'idType': 'ID_ISIN', 'idValue': isin} for isin in isins]
-    response = requests.post('https://api.openfigi.com/v3/mapping', headers=headers, json=mappings)
-    response.raise_for_status()
-    data = response.json()
+unique_isins = trade_data['ISIN'].unique().tolist()
+print(f"Gefundene eindeutige ISINs: {len(unique_isins)}")
+
+# --- 3. ISIN zu Yahoo Finance-Ticker-Mapping ---
+def map_isins_to_yahoo_tickers(isins):
     isin_ticker_map = {}
-    for item in data:
-        isin = item.get('data', [{}])[0].get('idValue', None)
-        ticker = item.get('data', [{}])[0].get('ticker', None)
-        if isin and ticker:
-            isin_ticker_map[isin] = ticker
+    for isin in isins:
+        try:
+            # Suche den Ticker über Yahoo Finance
+            ticker = yf.Ticker(isin)
+            if ticker.info and 'symbol' in ticker.info:
+                isin_ticker_map[isin] = ticker.info['symbol']
+            else:
+                isin_ticker_map[isin] = None  # Kein Ticker gefunden
+        except Exception as e:
+            print(f"Fehler bei der Verarbeitung von ISIN {isin}: {e}")
+            isin_ticker_map[isin] = None
     return isin_ticker_map
 
-isin_to_ticker = map_isins_to_tickers(unique_isins)
+print("Starte die Zuordnung von ISINs zu Yahoo Finance-Tickern...")
+isin_to_ticker = map_isins_to_yahoo_tickers(unique_isins)
 
-trade_data['Ticker'] = trade_data['ISIN'].map(isin_to_ticker)
+# --- 4. Ergebnisse in eine CSV-Datei schreiben ---
+# Erstelle ein DataFrame mit ISIN und Ticker
+result_df = pd.DataFrame(list(isin_to_ticker.items()), columns=['ISIN', 'Ticker'])
 
-# Entferne Zeilen ohne Ticker
-trade_data.dropna(subset=['Ticker'], inplace=True)
-
-# Korrekt: Auswahl von Spalten
-print(trade_data[['ISIN', 'Ticker']])
-
+# Schreibe die Ergebnisse in eine CSV-Datei
+result_df.to_csv(OUTPUT_CSV_PATH, index=False)
+print(f"ISIN zu Ticker-Mapping wurde erfolgreich in {OUTPUT_CSV_PATH} gespeichert.")
