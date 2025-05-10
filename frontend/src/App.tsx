@@ -3,6 +3,7 @@ import { TRTopNav } from "@/components/TRTopNav"
 import { WealthPage } from "@/pages/WealthPage"
 import { CashPage } from "@/pages/CashPage"
 import { CommunityPage } from "@/pages/CommunityPage"
+import { UserDetailPage } from "@/pages/UserDetailPage"
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
             <Route path="/wealth" element={<WealthPage />} />
             <Route path="/cash" element={<CashPage />} />
             <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community/user/:userId" element={<UserDetailPage />} />
             <Route path="*" element={<Navigate to="/wealth" replace />} />
           </Routes>
         </main>
