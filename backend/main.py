@@ -3,17 +3,18 @@ from backend_handler import get_overall_user_data, get_friends_data, get_portfol
 from database_handler import connect_to_database
 
 app = FastAPI()
-cur = connect_to_database()
+cur, conn = connect_to_database()
 
 @app.get("/user/")
-async def get_user_overall(user_id: str):
+async def get_api_user_overall(user_id: str):
+    print(user_id)
     person = get_overall_user_data(cur, user_id)
     return {"firstName": person.first_name, "lastName": person.last_name, "summary": person.summary, "avatarLink": person.avatar_link}
     
     
 @app.get("/friends/")
-async def get_friends_data(user_id: str):
-    friends_objects = get_friends_data(user_id)
+async def get_api_friends_data(user_id: str):
+    friends_objects = get_friends_data(cur, user_id)
     friends = []
     for friend in friends_objects:
         friends.append({
@@ -27,7 +28,7 @@ async def get_friends_data(user_id: str):
     
     
 @app.get("/user/details/")
-async def get_user_details(user_id: str):
+async def get_api_user_details(user_id: str):
     portfolio = get_portfolio_data(cur, user_id)
     assets = {}
     for i, asset_name in enumerate(portfolio.asset_names):
