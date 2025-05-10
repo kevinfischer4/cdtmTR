@@ -1,6 +1,6 @@
 import psycopg2
 from urllib.parse import urlparse
-from ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary
+from ai_handler import call_api, generate_portfolio_summary, generate_risk_summary, generate_friend_summary, generate_user_trader_profile, generate_user_latest_changes
 from typing import List
 
 db_uri = "postgres://uaotb2ktauua4h:pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dddma3ir06vhdo"
@@ -105,7 +105,7 @@ def insert_user(cur, user_id: str):
     ))
 
 
-def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: List[str], tradings: str, transactions: str):
+def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: List[float], tradings: str, transactions: str):
     summary = generate_portfolio_summary(tradings, transactions)
     risk_summary = generate_risk_summary(tradings, transactions)
     cur.execute("""
@@ -158,6 +158,30 @@ def set_summary(cur, user_id: str, friend_names: List[str], friend_portfolio_sum
     cur.execute("""
         UPDATE Person
         SET summary = %s
+        WHERE userId = %s;
+    """, (summary, user_id))
+    
+    
+def set_trader_profile(cur, user_id: str, tradings: str):
+    """
+    Updates the latest changes for a given user_id in the Person table.
+    """
+    summary = generate_user_latest_changes(tradings)
+    cur.execute("""
+        UPDATE Person
+        SET latest = %s
+        WHERE userId = %s;
+    """, (summary, user_id))
+    
+    
+def set_latest(cur, user_id: str, tradings: str):
+    """
+    Updates the trader profile field for a given user_id in the Person table.
+    """
+    summary = generate_user_trader_profile(tradings)
+    cur.execute("""
+        UPDATE Person
+        SET traderProfile = %s
         WHERE userId = %s;
     """, (summary, user_id))
 
