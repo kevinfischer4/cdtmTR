@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import vectorbt as vbt
 from data_loader import load_banking_data, load_trading_data
-from model import Trade, Risk  # Make sure your models are imported
+from model import Trade  # Make sure your models are imported
 import os
 import pandas as pd
 import numpy as np
@@ -14,29 +14,46 @@ from datetime import datetime
 #"User" = "36fd51ee-dadd-45ee-8577-5a6688463abc"
 
 # Mock ISIN to symbol mapping (replace with your actual asset data or lookup logic)
-ISIN_TO_SYMBOL = {
-    "US06417N1037": "MCP",
-  "US070450Y1038": "VJET",
-  "DE000SU47L30": "WDI.DE",
-  "KYG9828G1082": "09988.HK",
-  "DE000WACK012": "WAC.DE",
-  "US0921131092": "ADBE",
-  "MHY1771G1026": "MHY.TO",
-  "US98980F1049": "XELA",
-  "US29414B1044": "RPM",
-  "US98980L1017": "XTNT",
-  "IL0011595993": "NICE",
-  "IL0011582033": "TEVA",
-  "SE0000163628": "ERIC-B.ST",
-  "US57060D1081": "MS.LSE",
-  "US5500211090": "ACGL",
-  "US9224751084": "SONY",
-  "LU0974299876": "AMS.PA",
-  "US45784P1012": "ORCL",
-  "US98138H1014": "ZEN"
+#ISIN_TO_SYMBOL = {
+#    "US06417N1037": "MCP",
+#  "US070450Y1038": "VJET",
+ # "DE000SU47L30": "WDI.DE",
+  #"KYG9828G1082": "09988.HK",
+  #"DE000WACK012": "WAC.DE",
+ # "US0921131092": "ADBE",
+ # "MHY1771G1026": "MHY.TO",
+ # "US98980F1049": "XELA",
+ # "US29414B1044": "RPM",
+ # "US98980L1017": "XTNT",
+ # "IL0011595993": "NICE",
+ # "IL0011582033": "TEVA",
+  #"SE0000163628": "ERIC-B.ST",
+  #"US57060D1081": "MS.LSE",
+  #"US5500211090": "ACGL",
+  #"US9224751084": "SONY",
+  #"LU0974299876": "AMS.PA",
+  #"US45784P1012": "ORCL",
+  #"US98138H1014": "ZEN"
 
-}
-
+#}
+def load_isin_to_symbol_mapping(file_path: str) -> dict:
+    """Load ISIN to symbol mapping from a CSV file."""
+    try:
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"CSV file not found at path: {file_path}")
+        mapping_df = pd.read_csv(file_path)
+        if 'ISIN' not in mapping_df.columns or 'Ticker' not in mapping_df.columns:
+            raise ValueError("CSV file must contain columns 'ISIN' and 'Ticker'.")
+        mapping_df = mapping_df[['ISIN', 'Ticker']].dropna()  # Keep only relevant columns and drop missing values
+        mapping_df.columns = ['isin', 'tracker']  # Rename columns for consistency
+        mapping_df = mapping_df.dropna()  # Remove rows with missing values
+        return dict(zip(mapping_df['isin'], mapping_df['tracker']))
+    except Exception as e:
+        print(f"Error loading ISIN to symbol mapping: {e}")
+        return {}
+        
+# Load ISIN to symbol mapping from the specified file
+ISIN_TO_SYMBOL = load_isin_to_symbol_mapping(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data_tracker.csv"))
 
 def trades_to_dataframe(trades: list[Trade]) -> pd.DataFrame:
     rows = []
@@ -113,7 +130,9 @@ def compute_risk_scores(pf: vbt.Portfolio) -> dict:
 
 
 def main():
-    user_id = "01c56b98-55fa-4d8a-ae53-e55192fc9718"
+    #user_id = "01c56b98-55fa-4d8a-ae53-e55192fc9718"
+    #user_id = "00909ba7-ad01-42f1-9074-2773c7d3cf2c"
+    user_id = "92a7f63d-8515-4440-a61e-6e3101fc7a46"
 
     # Lade alle Trades
     trade_data = load_trading_data(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data.csv"))
