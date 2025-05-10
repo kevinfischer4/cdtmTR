@@ -21,7 +21,7 @@ export function PortfolioAllocationChart({
             outerRadius={120}
             dataKey="value"
             labelLine={false}
-            label={({ name, percent, x, y, midAngle }) => {
+            label={({ percent, x, y, midAngle }) => {
               const RADIAN = Math.PI / 180;
               const radius = 140;
               const cx = x;
@@ -32,20 +32,22 @@ export function PortfolioAllocationChart({
               const sy = cy + (radius + 10) * sin;
               
               return (
-                <text 
-                  x={sx} 
-                  y={sy} 
-                  fill="#333333" 
-                  textAnchor={x > cx ? 'start' : 'end'} 
-                  dominantBaseline="central"
-                  style={{ fontSize: '12px', fontWeight: '500' }}
-                >
-                  {`${(percent * 100).toFixed(0)}%`}
-                </text>
+                <g>
+                  <text 
+                    x={sx} 
+                    y={sy} 
+                    fill="#333333" 
+                    textAnchor={x > cx ? 'start' : 'end'} 
+                    dominantBaseline="central"
+                    style={{ fontSize: '12px', fontWeight: '500' }}
+                  >
+                    {`${(percent * 100).toFixed(0)}%`}
+                  </text>
+                </g>
               );
             }}
           >
-            {Object.entries(category).map((entry, index) => (
+            {Object.entries(category).map(([_], index) => (
               <Cell 
                 key={`cell-${index}`} 
                 fill={[
