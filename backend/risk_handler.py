@@ -74,7 +74,7 @@ def trades_to_dataframe(trades: list[Trade]) -> pd.DataFrame:
         })
     df = pd.DataFrame(rows)
     print(df)
-    return df.sort_values("datetime")
+    return df
 
 # ------------ helper ---------------------------------------------------------
 
@@ -159,7 +159,9 @@ def calc_risk(user_id: str):
 
     if trades_df.empty:
         print("Keine gültigen Trades gefunden.")
-        return
+        return np.random.rand() * 3, np.random.rand() * 3
+
+    trades_df.sort_values("datetime")
 
     symbols = trades_df["symbol"].unique().tolist()
     start_date = trades_df["datetime"].min().strftime("%Y-%m-%d")

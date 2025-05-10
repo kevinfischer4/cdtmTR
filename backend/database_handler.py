@@ -258,9 +258,8 @@ def get_persons(cur):
     """
     Retrieves all data for a portfolio with the given user_id.
     """
-    cur.execute("""SELECT userId FROM Portfolio;""")
-    portfolio = cur.fetchall()
-    return portfolio
+    cur.execute("SELECT userId FROM Portfolio;")
+    return [user_id for (user_id,) in cur.fetchall()]
 
 
 def main():

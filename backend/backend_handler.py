@@ -25,7 +25,7 @@ def get_overall_user_data(cur, user_id: str):
         
     portfolio_data = get_portfolio_data(cur, user_id)
     
-    return Person(userId=str(user_id), 
+    return Person(userId=user_id, 
                 firstName=person_data[1],
                 lastName=person_data[2],
                 friends=person_data[3] or [],
