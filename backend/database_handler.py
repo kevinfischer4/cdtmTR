@@ -156,14 +156,16 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
 
 def add_friend(cur, user_id: str, friend_id: str):
     """
-    Adds a friend_id to the 'friends' array of the specified user_id in the Person table.
-    If the friends array is NULL, it initializes it first.
+    Appends friend_id to the 'friends' text[] column for a user in the Person table.
+    Initializes the array if it's currently NULL.
     """
     cur.execute("""
         UPDATE Person
-        SET friends = COALESCE(friends, ARRAY[]::TEXT[]) || %s
+        SET friends = COALESCE(friends, ARRAY[]::TEXT[]) || %s::TEXT
         WHERE userId = %s;
     """, (friend_id, user_id))
+
+
     
 
 def set_summary(cur, user_id: str, friend_names: List[str], friend_portfolio_summaries: List[str]):
