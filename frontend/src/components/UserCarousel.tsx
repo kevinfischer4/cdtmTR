@@ -1,0 +1,183 @@
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar } from "@/components/ui/avatar";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+export interface UserData {
+  id: string;
+  profilePicUrl: string;
+  name: string;
+  text1: string;
+  text2: string;
+}
+
+interface UserCarouselProps {
+  users: UserData[];
+  className?: string;
+  onUserSelect?: (user: UserData) => void;
+}
+
+export function UserCarousel({ users, className = "", onUserSelect }: UserCarouselProps) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [transitioning, setTransitioning] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Check if screen is mobile size on mount and window resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkMobile);
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const handlePrev = () => {
+    if (transitioning) return;
+    setTransitioning(true);
+    setActiveIndex((prevIndex) => (prevIndex === 0 ? users.length - 1 : prevIndex - 1));
+  };
+
+  const handleNext = () => {
+    if (transitioning) return;
+    setTransitioning(true);
+    setActiveIndex((prevIndex) => (prevIndex === users.length - 1 ? 0 : prevIndex + 1));
+  };
+
+  const handleTransitionEnd = () => {
+    setTransitioning(false);
+  };
+
+  const handleCardClick = (user: UserData) => {
+    if (onUserSelect) {
+      onUserSelect(user);
+    }
+  };
+
+  // Calculate the position and styling for each card
+  const getCardPosition = (index: number) => {
+    if (users.length <= 1) return { 
+      transform: "translateX(0)", 
+      scale: "scale-100", 
+      opacity: "opacity-100", 
+      zIndex: "z-10",
+      display: "" 
+    };
+
+    // Calculate relative position from active index
+    const relativePosition = (((index - activeIndex) % users.length) + users.length) % users.length;
+    
+    // Default styles and positions
+    let transform = "translateX(0)";
+    let scale = "scale-75";
+    let opacity = "opacity-60";
+    let zIndex = "z-0";
+    let display = "";
+    
+    // Consistent experience across all devices - always show 3 cards
+    if (relativePosition === 0) {
+      // Center (active) card
+      transform = "translateX(0)";
+      scale = "scale-100";
+      opacity = "opacity-100";
+      zIndex = "z-10";
+    } else if (relativePosition === 1 || (users.length === 2 && relativePosition === 1)) {
+      // Right card
+      transform = isMobile ? "translateX(50%)" : "translateX(75%)";
+      scale = "scale-75";
+      opacity = "opacity-70";
+      zIndex = "z-0";
+    } else if (relativePosition === users.length - 1) {
+      // Left card
+      transform = isMobile ? "translateX(-50%)" : "translateX(-75%)";
+      scale = "scale-75";
+      opacity = "opacity-70";
+      zIndex = "z-0";
+    } else {
+      // Hide other cards
+      transform = relativePosition < users.length / 2 ? "translateX(-150%)" : "translateX(150%)";
+      scale = "scale-50";
+      opacity = "opacity-0";
+      zIndex = "z-0";
+      display = "none";
+    }
+    
+    return { transform, scale, opacity, zIndex, display };
+  };
+
+  return (
+    <div className={`relative w-full max-w-4xl mx-auto overflow-hidden px-6 ${className}`}>
+      {/* Carousel Controls */}
+      <div className="absolute inset-y-0 left-0 flex items-center pl-1">
+        <button 
+          onClick={handlePrev}
+          className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full bg-background shadow-md z-20"
+          disabled={transitioning}
+          aria-label="Previous slide"
+        >
+          <ChevronLeft size={isMobile ? 16 : 20} />
+        </button>
+      </div>
+      
+      <div className="absolute inset-y-0 right-0 flex items-center pr-1">
+        <button 
+          onClick={handleNext}
+          className="h-8 w-8 md:h-10 md:w-10 flex items-center justify-center rounded-full bg-background shadow-md z-20"
+          disabled={transitioning}
+          aria-label="Next slide"
+        >
+          <ChevronRight size={isMobile ? 16 : 20} />
+        </button>
+      </div>
+      
+      {/* Carousel Content */}
+      <div
+        ref={containerRef}
+        className="relative flex justify-center items-center h-[380px] md:h-[450px] pointer-events-none"
+        onTransitionEnd={handleTransitionEnd}
+      >
+        {users.map((user, index) => {
+          const { transform, scale, opacity, zIndex, display } = getCardPosition(index);
+          return (
+            <Card
+              key={user.id}
+              className={`absolute transition-all duration-500 ease-in-out w-[180px] md:w-[320px] ${scale} ${opacity} ${zIndex} pointer-events-auto cursor-pointer hover:shadow-lg`}
+              style={{ transform, display }}
+              onClick={() => handleCardClick(user)}
+            >
+              <CardContent className="p-4 md:p-8 flex flex-col items-center">
+                <Avatar className="h-20 w-20 md:h-32 md:w-32 mb-4 md:mb-6">
+                  <img src={user.profilePicUrl} alt={user.name} />
+                </Avatar>
+                <h3 className="text-base md:text-2xl font-semibold mb-2 md:mb-3 text-center">{user.name}</h3>
+                <p className="text-sm md:text-lg text-muted-foreground text-center mb-2 md:mb-3">{user.text1}</p>
+                <p className="text-sm md:text-base text-muted-foreground text-center">{user.text2}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+      
+      {/* Indicators */}
+      <div className="flex justify-center md:mt-10 gap-1 md:gap-2">
+        {users.map((_, index) => (
+          <button
+            key={index}
+            className={`h-1.5 w-1.5 md:h-2 md:w-2 rounded-full ${
+              index === activeIndex ? "bg-primary" : "bg-muted"
+            }`}
+            onClick={() => setActiveIndex(index)}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+} 
