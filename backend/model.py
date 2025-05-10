@@ -95,7 +95,7 @@ class Asset(BaseModel):
     
 class Portfolio(BaseModel):
     user_id: str = Field(alias="userId")
-    assetNames: List[str] = Field(alias="assetNames")
+    asset_names: List[str] = Field(alias="assetNames")
     asset_amounts: List[float] = Field(alias="assetAmounts")
     summary: str = Field(alias="summary")
     risk_summary: str = Field(alias="riskSummary")

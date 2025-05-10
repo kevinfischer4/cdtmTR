@@ -1,6 +1,4 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
-from model import Person
 from backend_handler import get_overall_user_data, get_friends_data, get_portfolio_data
 from database_handler import connect_to_database
 
@@ -29,11 +27,13 @@ async def get_friends_data(user_id: str):
     
     
 @app.get("/user/details/")
-async def get_user_details(user_id: str, category: str):
+async def get_user_details(user_id: str):
     portfolio = get_portfolio_data(cur, user_id)
-    
+    assets = {}
+    for i, asset_name in enumerate(portfolio.asset_names):
+        assets[asset_name] = portfolio.asset_amounts[i]
     return {"summary": portfolio.summary,
             "riskRatio": portfolio.risk_ratio,
             "riskText": portfolio.risk_summary,
-            "totalReturn": portfolio.to,
-            "assets": {"TEST_ASSET_NAME": 67.0, "TEST_ASSET_2": 23.0}}
+            "totalReturn": portfolio.total_return,
+            "assets": assets}

@@ -1,6 +1,5 @@
 import requests
 from typing import List
-from model import Person
 
 def call_api(prompt: str):
     API_KEY = 'cxS27JBQsBfFenit5BvwlPPFSQ7DWaNw'
@@ -39,17 +38,17 @@ def generate_friend_summary(friend_names: List[str], friend_portfolio_summaries:
     return call_api(instruction_prompt)
     
 
-def generate_user_trader_profile(data: str):
+def generate_user_trader_profile(tradings: str):
     instruction_prompt = f"""Your task is to generate a short trader profile of the person and the provided data.
     Cosider the trading frequency, asset distrebution and other important stuff.
     Answer shortly in max. two sentences. \n
-    Here is the data: {data}"""
+    Here is the data: {tradings}"""
     return call_api(instruction_prompt)
 
-def generate_user_latest_changes(data: str):
+def generate_user_latest_changes(tradings: str):
     instruction_prompt = f"""Your task is to summarize the latest activity of the user on the provided data. 
     Answer shortly in max. two sentences. \n
-    Here is the data: {data}"""
+    Here is the data: {tradings}"""
     return call_api(instruction_prompt)
 
 def generate_portfolio_summary(trading_data: str, transaction_data: str):
