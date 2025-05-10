@@ -6,7 +6,7 @@ from data_loader import load_banking_data, load_trading_data
 from model import Trade, Risk  # Make sure your models are imported
 import os
 import pandas as pd
-import vectorbt as vbt
+import numpy as np
 from collections import defaultdict
 from datetime import datetime
     
@@ -16,7 +16,7 @@ from datetime import datetime
 ISIN_TO_SYMBOL = {
     "CNE100000296": "BYDDF",
     "US29786A1060": "ETSY", 
-    "US64110L1061": "NFLX", 
+    # "US64110L1061": "NFLX", 
     # ... add more
 }
 
@@ -38,14 +38,63 @@ def trades_to_dataframe(trades: list[Trade]) -> pd.DataFrame:
             'isin': trade.isin
         })
     df = pd.DataFrame(rows)
+    print(df)
     return df.sort_values("datetime")
+
+# ------------ helper ---------------------------------------------------------
+
+def build_size_matrix(price_df: pd.DataFrame,
+                      trades_df: pd.DataFrame) -> pd.DataFrame:
+    """Return matrix aligned 1‑for‑1 with price_df.index (daily)."""
+
+    # ---- 1 · normalise the price index ------------------------------------
+    if price_df.index.tz is None:
+        px_index = price_df.index              # already tz‑naïve
+    else:
+        px_index = price_df.index.tz_convert(None)   # drop tz info
+    px_index = px_index.normalize()            # force HH:MM:SS → 00:00:00
+
+    # ---- 2 · aggregate trades on the same footing -------------------------
+    trades_local = trades_df.copy()
+    trades_local['date'] = (
+        trades_local['datetime']
+        .dt.tz_localize(None)                  # safe – no 'errors' kw‑arg
+        .dt.normalize()
+    )
+
+    daily_agg = (trades_local
+                 .groupby(['date', 'symbol'])['quantity']
+                 .sum()
+                 .unstack(fill_value=0))
+
+    # ---- 3 · align rows & columns -----------------------------------------
+    size_matrix = (daily_agg
+                   .reindex(px_index, fill_value=0)
+                   .reindex(price_df.columns, axis=1, fill_value=0))
+
+    # keep zeros: 0 means “no order” for vectorbt.from_orders
+    return size_matrix
+
+
+
+def compute_risk_scores(pf: vbt.Portfolio) -> dict:
+    """Liefert Risk‑Kennzahlen, egal wie die Labels in pf.stats() heißen."""
+    stats = pf.stats()                      # Series (ein Portfoliokol)
+    # pick the rows whose label contains one of these substrings
+    risk_mask = stats.index.str.contains(
+        'volatility|drawdown|var|cvar|risk|sharpe|sortino|return|trade',   # add/remove terms
+        case=False, regex=True
+    )
+
+    risk_stats = stats[risk_mask]        # still a Series
+    print(risk_stats.to_string())
 
 
 def main():
     trade_data = load_trading_data(os.path.join(os.getcwd(), "backend", "data", "trading_sample_data.csv"))
-    trade_data = trade_data[1:4]
+    trade_data = trade_data
 
-    # This looks good, format is 3 x 5 with Symbol, Number, Number, ISIN
+    # This looks good, format is n x 5 with Symbol, Number, Number, ISIN
     trades_df = trades_to_dataframe(trade_data)
 
     if trades_df.empty:
@@ -55,51 +104,27 @@ def main():
     symbols = trades_df["symbol"].unique().tolist()
     start_date = trades_df["datetime"].min().strftime("%Y-%m-%d")
 
-    # Fetch price data, shape is 235 x 3 with number values for each dimension
+    # Fetch price data, shape is n x m with n trading days and m symbols
     price_data = vbt.YFData.download(symbols, start=start_date).get("Close")
+
     
-    # Initialize size array with 0s with shape 235 x 3
-    # Each row is a trading day, same as in price_data and each column a symbol
-    size_df = pd.DataFrame(0.0, index=price_data.index, columns=symbols)
+    price_data = price_data.tz_localize(None)
+    price_data.index = price_data.index.normalize()
 
-    for _, row in trades_df.iterrows():
-        symbol = row["symbol"]
-        dt = row["datetime"]
-        idx = price_data.index.get_indexer([dt], method="nearest")[0]
-        if idx == -1:
-            continue
-        date = price_data.index[idx]
-        size_df.loc[date, symbol] += row["quantity"]  # Safe and compatible
+    # 1. Build the order‑size matrix
+    size_matrix = build_size_matrix(price_data, trades_df)
 
-
-    # Cumulative size (positions)
-    position_df = size_df.cumsum()
-
-    # Create the portfolio
-    # Expects a position size time series with "How many units of this asset were held on this day?""
-    portfolio = vbt.Portfolio.from_holding(
+    # 2. Portfolio
+    pf = vbt.Portfolio.from_orders(
         close=price_data,
-        size=position_df
+        size=size_matrix,       # zeros are OK – mean “no order”
+        size_type='amount',
+        init_cash=100_000,
+        freq='D'  
     )
-    
-    
-    # Risk metrics
-    volatility = portfolio.returns().std() * (252 ** 0.5)
-    max_dd = portfolio.max_drawdown()
-    sharpe = portfolio.sharpe_ratio(freq='1D')
 
-    summary = (
-        f"Volatility: {volatility.mean():.2%}, "
-        f"Max Drawdown: {max_dd.mean():.2%}, "
-        f"Sharpe Ratio: {sharpe.mean():.2f}"
-    )
-    risk_score = float((sharpe.mean() - max_dd.mean()) / volatility.mean()) if volatility.mean() != 0 else 0.0
-
-
-    risk = Risk(summary=summary, ratio=risk_score)
-
-    print(risk.json(indent=2))
-
+    # 3. Risk metrics
+    risk_scores = compute_risk_scores(pf)
 
 
 if __name__ == "__main__":
