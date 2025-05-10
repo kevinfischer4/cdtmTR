@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from backend_handler import get_overall_user_data, get_friends_data, get_portfolio_data
-from database_handler import connect_to_database
+from backend_handler import get_overall_user_data, get_friends_data, get_portfolio_data, get_all_persons
+from database_handler import connect_to_database, add_friend
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -46,3 +46,26 @@ async def get_api_user_details(user_id: str):
             "riskText": portfolio.risk_summary,
             "totalReturn": portfolio.total_return,
             "assets": assets}
+    
+    
+@app.get("/user/explore/")
+async def get_api_explore_users(user_id: str):
+    all_persons = [person.user_id for person in get_all_persons(cur)]
+    user_friends = [friend.user_id for friend in get_friends_data(cur, user_id)] 
+    recommondations = []
+    for person in set([person.user_id for person in all_persons]):
+        if person in user_friends or person == user_id:
+            continue
+        recommondations.append({
+            "avatarLink": person.avatar_link, 
+            "firstName": person.first_name,
+            "lastName": person.last_name,
+            "traderProfile": person.trader_profile
+        })
+    return recommondations
+        
+    
+@app.post("/user/friend/")
+async def post_api_add_friend(user_id: str, friend_id: str):
+    add_friend(cur, user_id, friend_id)
+    return {"status": "ok"}
