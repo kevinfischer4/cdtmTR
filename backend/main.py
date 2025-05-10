@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from backend_handler import get_overall_user_data, get_friends_data, get_portfolio_data, get_all_persons
-from database_handler import connect_to_database, add_friend
+from .backend_handler import get_overall_user_data, get_friends_data, get_portfolio_data
+from .database_handler import connect_to_database
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
