@@ -4,6 +4,8 @@ import vectorbt as vbt
 # 1) Transaktionen laden
 tx = pd.read_sql("SELECT * FROM transactions WHERE user_id = %s", con=engine, params=[user_id], index_col='executed_at', parse_dates=['executed_at'])
 
+
+
 # 2) Einmal alle ISINs extrahieren
 isins = tx['isin'].unique()
 
