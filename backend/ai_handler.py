@@ -34,7 +34,7 @@ def generate_friend_summary(friend_names: List[str], friend_portfolio_summaries:
     Answer only using the first names of the friends and do not mention any money amount or currency.
     For instance, you could infer trends and investment behaviours of your friends on the provided data.
     Summarize the friend portfolios using the provided data.
-    Answer shortly in max. two sentences.
+    Answer shortly in max. 2 sentences.
     If you can not create a summmary of the data, answer with 'No summary available.'\n
     Here is the data: \n"""
     for i, friend_name in enumerate(friend_names):
@@ -46,7 +46,7 @@ def generate_user_trader_profile(tradings: str):
     instruction_prompt = f"""Your task is to generate a short trader profile of the person and the provided data.
     Cosider the trading frequency, asset distrebution and other important stuff.
     Do not include currencies, money amounts, only include general information that can be inferred from the data.
-    Answer shortly in max. two sentences.
+    Answer shortly in max. 7 words.
     If you can not create a summmary of the data, answer with 'No summary available.'\n
     Here is the data: {tradings}"""
     return call_api(instruction_prompt)
@@ -55,7 +55,7 @@ def generate_user_trader_profile(tradings: str):
 def generate_user_latest_changes(tradings: str):
     instruction_prompt = f"""Your task is to summarize the latest activity of the user on the provided data. 
     Summarize the data very generally and do not mention any currencies or money amounts or other private data.
-    Answer shortly in max. two sentences.
+    Answer shortly in max. 7 words.
     If you can not create a summmary of the data, answer with 'No summary available.'\n
     Here is the data: {tradings}"""
     return call_api(instruction_prompt)
@@ -80,7 +80,7 @@ def generate_risk_summary(trading_data: str, transaction_data: str):
     Answer generally and do not include any money amounts, currencies or other specific data.
     The answer should act more like a general overview of the validity state.
     The data is split into trading data and transaction data.
-    Answer shortly in max. two sentences.
+    Answer shortly in max. 3 sentences.
     If you can not create a summmary of the data, answer with 'No summary available.'\n
     Here is the trading data: {trading_data}\n\n\n
     Here is the transaction data: {transaction_data}"""

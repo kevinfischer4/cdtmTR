@@ -104,8 +104,10 @@ def insert_n_users_from_trading_data(cur, n: int):
 def set_user_attributes(cur, user_id: str):
     friends = get_friends_data(cur, user_id)
     portfolios = [get_portfolio_data(cur, friend.user_id).summary for friend in friends]
-    set_summary(cur, user_id, [friend.user_id for friend in friends], portfolios)
+    set_summary(cur, user_id, [friend.first_name for friend in friends], portfolios)
+    time.sleep(1.5)
     set_trader_profile(cur, user_id, get_portfolio_data(cur, user_id).tradings)
+    time.sleep(1.5)
     set_latest(cur, user_id, get_portfolio_data(cur, user_id).tradings)
 
 
@@ -121,12 +123,15 @@ if __name__ == "__main__":
         # insert_n_users_from_trading_data(cur, 20)
         # user_ids = create_portfolios_from_trading_data(cur, 20)
         # conn.commit()
-        add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "07d7d7d0-5d22-450b-8102-ad2eeaad6034")
-        add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "12d21500-130a-43a9-a455-d352abbfe7f3")
+        warren_buffet_id = "12d21500-130a-43a9-a455-d352abbfe7f3"
+        thomas_pischke_id = "00909ba7-ad01-42f1-9074-2773c7d3cf2c"
+        nancy_parker = "01c56b98-55fa-4d8a-ae53-e55192fc9718"
+        thomas_mueller = "016e4ff3-91b2-490f-9c1e-a09defe004b2"
+        #add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "07d7d7d0-5d22-450b-8102-ad2eeaad6034")
+        #add_friend(cur, "00909ba7-ad01-42f1-9074-2773c7d3cf2c", "12d21500-130a-43a9-a455-d352abbfe7f3")
+        #conn.commit()
+        set_user_attributes(cur, warren_buffet_id)
         conn.commit()
-        # for user_id in user_ids:
-        #     set_user_attributes(cur, user_id)
-        #     conn.commit()
         
     close_connection(cur, conn)
         

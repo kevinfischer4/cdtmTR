@@ -15,7 +15,6 @@ cur, conn = connect_to_database()
 
 @app.get("/user/")
 async def get_api_user_overall(user_id: str):
-    print(user_id)
     person = get_overall_user_data(cur, user_id)
     return {"firstName": person.first_name, "lastName": person.last_name, "summary": person.summary, "avatarLink": person.avatar_link}
     
