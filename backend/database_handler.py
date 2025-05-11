@@ -11,6 +11,7 @@ import pandas as pd
 
 db_uri = "postgres://uaotb2ktauua4h:pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c@c3gtj1dt5vh48j.cluster-czrs8kj4isg7.us-east-1.rds.amazonaws.com:5432/dddma3ir06vhdo"
 
+# Here again :D
 result = urlparse(db_uri)
 username = "uaotb2ktauua4h"
 password = "pada8df9c8488d372289a14dcea7d42b9b0cd9d1d011738ce8355372e7610037c"
@@ -82,17 +83,13 @@ def create_tables(cur):
     
     
 def insert_user(cur, user_id: str):
-    # Path to the names.csv file
     names_csv_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'backend', 'data', 'names.csv')
-    
-    # Read names from CSV
     names = []
     with open(names_csv_path, 'r') as names_file:
         csv_reader = csv.DictReader(names_file)
         for row in csv_reader:
             names.append((row['firstname'], row['lastname']))
     
-    # Choose a random name
     first_name, last_name = random.choice(names)
     
     print(f"Inserting user {user_id} with first name {first_name} and last name {last_name}")
@@ -110,14 +107,14 @@ def insert_user(cur, user_id: str):
             %s, %s, %s, %s, %s, %s, %s, %s
         );
     """, (
-        user_id, # userId (UUID)
-        first_name, # firstName
-        last_name, # lastName
-        [], # friends (TEXT[])
-        'https://example.com/avatar.jpg', # avatarLink
-        '', # summary of friend activity
-        '', # traderProfile
-        '' # latest
+        user_id,
+        first_name,
+        last_name,
+        [],
+        'https://www.w3schools.com/howto/img_avatar.png',
+        '',
+        '',
+        '' 
     ))
 
 
@@ -141,7 +138,7 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
             %s, %s, %s, %s, %s, %s, %s, %s, %s
         );
     """, (
-        user_id, # userId (UUID)
+        user_id,
         asset_names,
         asset_amounts,
         tradings,
@@ -151,7 +148,6 @@ def insert_portfolio(cur, user_id: str, asset_names: List[str], asset_amounts: L
         risk_summary,
         0.0
     ))
-    # TODO: Calculation
 
 
 def add_friend(cur, user_id: str, friend_id: str):
@@ -230,6 +226,7 @@ def get_person(cur, user_id: str):
     person = cur.fetchone()
     return person
 
+
 def get_friends(cur, user_id: str):
     """
     Retrieves all friends for a person with the given user_id.
@@ -260,29 +257,6 @@ def get_persons(cur):
     """
     cur.execute("SELECT userId FROM Portfolio;")
     return [user_id for (user_id,) in cur.fetchall()]
-
-
-def main():
-    cur, conn = connect_to_database()
-    if cur and conn:
-        try:
-            # Uncomment the line below to create tables
-            create_tables(cur)
-            
-            # Example: Insert the first 5 users from the trading data
-            inserted_users = insert_n_users_from_trading_data(cur, conn, 10)
-            print(f"Inserted {len(inserted_users)} users: {inserted_users}")
-            
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"An error occurred: {e}")
-        finally:
-            close_connection(cur, conn)
-
-
-if __name__ == "__main__":
-    main()
     
     
     

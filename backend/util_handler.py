@@ -56,21 +56,15 @@ def create_portfolios_from_trading_data(cur, n: int):
             elif direction == 'SELL':
                 asset_holdings[isin] -= execution_size
         
-        # Filter out assets with zero or negative holdings
         asset_holdings = {isin: amount for isin, amount in asset_holdings.items() if amount > 0}
         
-        # Create lists for insert_portfolio
         asset_names = list(asset_holdings.keys())
         asset_amounts = [asset_holdings[isin] for isin in asset_names]
         
-        # Convert user trading data to JSON string
         tradings_json = json.dumps(user_trading_data)
-        
-        # The transactions parameter is empty for now
         transactions_json = json.dumps(user_transaction_data)
         
-        # Insert the portfolio
-        if asset_names:  # Only create portfolio if user has assets
+        if asset_names: 
             insert_portfolio(cur, user_id, asset_names, asset_amounts, tradings_json, transactions_json)
             processed_users.append(user_id)
             print(f"Created portfolio for user {user_id} with {len(asset_names)} assets")

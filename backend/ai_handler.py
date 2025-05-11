@@ -2,6 +2,7 @@ import requests
 from typing import List
 
 def call_api(prompt: str):
+    # We are aware of the risks, don't blame us :D
     API_KEY = 'cxS27JBQsBfFenit5BvwlPPFSQ7DWaNw'
     url = 'https://api.mistral.ai/v1/chat/completions'
     headers = {
@@ -9,15 +10,14 @@ def call_api(prompt: str):
         'Content-Type': 'application/json'
     }
     payload = {
-        # TODO: Change to latest AI model from Mistral
-        "model": "mistral-large-latest",  # or "mistral-small", depending on your plan
+        "model": "mistral-large-latest",
         "messages": [
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        "temperature": 0.7  # Control randomness (0 = deterministic, 1 = creative)
+        "temperature": 0.7
     }
     response = requests.post(url, headers=headers, json=payload)
     if response.status_code == 200:
@@ -25,7 +25,6 @@ def call_api(prompt: str):
         print("Summary:\n", summary)
         return summary
     else:
-        # TODO: Replace with "Sorry, could not generate summary."
         print("Error:", response.status_code, response.text)
 
 

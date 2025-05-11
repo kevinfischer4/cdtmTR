@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 # --------------
 # Banking models
 # --------------
+# Not used yet frequently
 
 class Side(str, Enum):
     CREDIT = "CREDIT"
@@ -38,6 +39,7 @@ class Transaction(BaseModel):
 # --------------
 # Trading models
 # --------------
+# Not used yet frequently
 
 
 class Direction(str, Enum):
@@ -68,7 +70,7 @@ class Trade(BaseModel):
 # --------------
 # Asset models
 # --------------
-
+# Not used yet
 
 class AssetClass(str, Enum):
     EQUITY = "EQUITY"
